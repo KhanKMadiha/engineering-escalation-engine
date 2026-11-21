@@ -10,8 +10,10 @@ import {
   isLegacyDemoCustomerName,
   type DemoCaseKey,
 } from "@/lib/demo/demo-cases";
+import { seedDemoTechnicalEvidenceForCase } from "@/lib/demo/demo-technical-evidence";
 import { buildDemoEventTimestamps } from "@/lib/demo/demo-timestamps";
 import type { CaseRepository } from "@/lib/repositories/case-repository";
+import { getTechnicalEvidenceRepository } from "@/lib/repositories/get-technical-evidence-repository";
 import type { EscalationRecommendation, SupportCase } from "@/types";
 
 export type SeedDemoCaseResult = {
@@ -116,6 +118,8 @@ export async function seedDemoCases(
   const skippedExistingTitles: string[] = [];
   const staleSkipped: StaleDemoCaseSkip[] = [];
 
+  const evidenceRepo = getTechnicalEvidenceRepository();
+
   for (const definition of DEMO_CASE_DEFINITIONS) {
     const existing = existingByTitle.get(definition.createInput.issueTitle);
     if (skipIfTitleExists && existing) {
@@ -133,6 +137,14 @@ export async function seedDemoCases(
           expectedProduct: definition.createInput.product,
           existingCustomer: existing.customer,
           expectedCustomer: definition.createInput.customer,
+        });
+      } else {
+        // Existing demo case: ensure Phase B fixtures exist without rewriting intake.
+        await seedDemoTechnicalEvidenceForCase({
+          caseId: existing.id,
+          key: definition.key,
+          cases: options.repository,
+          evidence: evidenceRepo,
         });
       }
       continue;
@@ -178,6 +190,15 @@ export async function seedDemoCases(
       finalRecommendation =
         decided.record.escalationResult?.recommendation ?? finalRecommendation;
     }
+
+    // Seed Phase B evidence before fixing demo timestamps so audit events
+    // are included in the deterministic timeline (does not affect scoring).
+    await seedDemoTechnicalEvidenceForCase({
+      caseId: analysis.caseId,
+      key: definition.key,
+      cases: options.repository,
+      evidence: evidenceRepo,
+    });
 
     await applyFixedDemoTimestamps(
       options.repository,

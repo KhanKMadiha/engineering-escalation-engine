@@ -44,7 +44,7 @@ describe("shared in-memory repository across demo seed / API / dashboard", () =>
     expect(compositionRepo).toBe(inMemorySingleton);
 
     const seeded = await seedDemoCases({ repository: getCaseRepository() });
-    expect(seeded.seeded).toHaveLength(3);
+    expect(seeded.seeded).toHaveLength(10);
     const seededIds = new Set(seeded.seeded.map((s) => s.caseId));
 
     // Same path as GET /api/v1/cases (default composition, no injected services).

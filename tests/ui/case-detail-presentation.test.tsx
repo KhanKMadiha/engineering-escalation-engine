@@ -4,12 +4,13 @@ import { CaseDetailsCard } from "@/components/cases/CaseDetailsCard";
 import { caseDetailTwoColumnGridClassName } from "@/components/cases/CaseDetailTwoColumnLayout";
 import { CaseIssueHeader } from "@/components/cases/CaseIssueHeader";
 import { CaseTimeline } from "@/components/cases/CaseTimeline";
-import { CaseWorkspaceTabs } from "@/components/cases/CaseWorkspaceTabs";
+import { CaseWorkspace } from "@/components/cases/CaseWorkspace";
 import { HumanDecisionResultPanel } from "@/components/cases/HumanDecisionResultPanel";
 import { AssessmentTab } from "@/components/cases/tabs/AssessmentTab";
 import { HandoffTab } from "@/components/cases/tabs/HandoffTab";
 import { InvestigationTab } from "@/components/cases/tabs/InvestigationTab";
 import { OverviewTab } from "@/components/cases/tabs/OverviewTab";
+import { CaseWorkflowStepper } from "@/components/ui/Stepper";
 import {
   ESCALATION_THRESHOLDS,
   ESCALATION_WEIGHTS,
@@ -241,49 +242,130 @@ describe("presentation helpers", () => {
 });
 
 describe("final case workspace presentation", () => {
-  it("renders four workflow tabs with arrow separators", () => {
-    const html = renderToStaticMarkup(
-      <CaseWorkspaceTabs renderPanel={(tab) => <div>panel-{tab}</div>} />,
-    );
+  it("renders interactive five-step workflow navigator without tab bar", () => {
+    const html = renderToStaticMarkup(<CaseWorkspace record={record} />);
     expect(html).toContain('role="tablist"');
-    expect(html).toContain("Overview");
+    expect(html).toContain("Case details");
+    expect(html).not.toContain(">Intake<");
     expect(html).toContain("Investigation");
-    expect(html).toContain("Escalation Assessment");
+    expect(html).toContain("Assessment");
+    expect(html).toContain("Human decision");
     expect(html).toContain("Handoff");
-    expect(html).toContain("→");
-    expect(html).not.toContain(">Activity<");
-    expect(html).toContain("panel-overview");
+    expect(html).not.toContain("Case summary");
+    expect(html).not.toContain("Viewing");
+    expect(html).not.toContain("does not change workflow state");
+    expect(html).not.toContain(">01<");
+    expect(html).not.toContain("Escalation Assessment");
+    expect(html).not.toContain(">Overview<");
+    // Awaiting decision opens at Human decision (current relevant stage)
+    expect(html).toContain("Record decision");
+    expect(html).toContain("Case workflow section");
   });
 
-  it("places compact Timeline on Overview with disclosure", () => {
+  it("keeps original case information reachable via Case details without a Case summary link", () => {
+    const html = renderToStaticMarkup(
+      <CaseWorkspace record={{ ...record, status: "investigation_continues" }} />,
+    );
+    expect(html).toContain("Case details");
+    expect(html).toContain("Investigation");
+    expect(html).not.toContain("Case summary");
+    expect(html).toContain("Technical evidence");
+  });
+
+  it("distinguishes selected step from case workflow status without helper copy", () => {
+    const html = renderToStaticMarkup(
+      <CaseWorkflowStepper
+        status="awaiting_decision"
+        selectedStage="Investigation"
+        onSelectStage={() => undefined}
+        panelId="panel"
+      />,
+    );
+    expect(html).toContain("Investigation");
+    expect(html).toContain("Human decision");
+    expect(html).toContain("✓");
+    expect(html).toContain('aria-current="step"');
+    expect(html).not.toContain("Viewing");
+    expect(html).not.toContain("does not change workflow state");
+    expect(html).not.toContain(">01<");
+  });
+
+  it("places a simplified recommendation, next action and recent activity on Overview", () => {
     const html = renderToStaticMarkup(
       <OverviewTab record={record} goToTab={() => undefined} />,
     );
-    expect(html).toContain("Timeline");
-    expect(html).toContain("Events");
-    expect(html).toContain("History");
-    expect(html).toContain("View timeline");
-    expect(html).not.toContain("2 events");
-    expect(html).not.toContain("Case created");
+    expect(html).toContain("Recent activity");
+    expect(html).toContain("View full timeline");
+    expect(html).toContain("Case reported");
+    expect(html).toContain("Escalation assessed");
     expect(html).not.toContain("Collapse timeline");
-    expect(html).toContain("View investigation");
-    expect(html).toContain("View escalation assessment");
+    expect(html).toContain("View full assessment");
     expect(html).toContain("Escalation recommendation");
-    expect(html).toContain("ESCALATE");
-    expect(html).toContain("Human approval required");
-    expect(html).toContain("authorised reviewer");
+    expect(html).toContain("Escalate");
+    expect(html).toContain("Escalation readiness");
+    expect(html).toContain("About escalation readiness score");
+    expect(html).not.toContain(
+      "Deterministic rules on validated evidence — not an AI confidence",
+    );
+    // Awaiting decision: decision form is visible — no redundant Next action card
+    expect(html).not.toContain("Next action");
+    expect(html).not.toContain("Record human decision");
+    expect(html).not.toContain("Supporting reasoning");
+    expect(html).not.toContain("What we know");
+    expect(html).not.toContain("What is missing");
+    expect(html).toContain("Record decision");
+    expect(html).toContain("Escalation recommendation");
     expect(html).toContain("Expected behaviour");
     expect(html).toContain("Actual behaviour");
+    expect(html).toContain("Relevant findings");
     expect(html).not.toContain("How is this calculated?");
     expect(html).not.toContain("HTTP status: 500");
     expect(html).not.toContain("req-1");
     expect(html).not.toContain("Detailed AI reasoning");
-    // Case details is primary sidebar context; Timeline sits beneath it
-    expect(html.indexOf("Case details")).toBeLessThan(html.indexOf("Timeline"));
+    expect(html).not.toContain("Established evidence");
+    expect(html).not.toContain("Missing evidence");
+    // Recommendation headline stays charcoal; no nested score mini-card
+    expect(html).not.toContain("text-warning");
+    expect(html).not.toContain("bg-subtle px-4 py-4");
+    // Case details is primary sidebar context; activity sits beneath it
+    expect(html.indexOf("Case details")).toBeLessThan(
+      html.indexOf("Recent activity"),
+    );
     expect(html).toContain(caseDetailTwoColumnGridClassName);
   });
 
-  it("shows approved current-action copy directing reviewers to Handoff", () => {
+  it("renders handoff document Summary without repeating the issue title chrome", () => {
+    const approved: CaseRecord = {
+      ...record,
+      status: "escalated",
+      decision: {
+        id: "dec-1",
+        caseId: record.id,
+        decision: "approved",
+        rationale: "Enough evidence to escalate to engineering.",
+        decidedBy: "support_engineer",
+        decidedAt: "2026-09-10T19:10:00.000Z",
+        escalationScoreAtDecision: 98,
+        recommendationAtDecision: "escalate",
+        source: "human_decision",
+      },
+      handoff,
+    };
+    const html = renderToStaticMarkup(<HandoffTab record={approved} />);
+    // Section titles are CSS-uppercased in the browser; markup still contains Summary.
+    expect(html).toContain("Summary");
+    expect(html).not.toContain(">Problem<");
+    expect(html).toContain("Handoff document");
+    expect(html).toContain("Engineering handoff");
+    // Presentation chrome no longer repeats the issue title above the document.
+    // Title remains in handoff data for copy/export (CopyHandoffButton), not as visible prose here.
+    // Prior automation counted page-header titles + CSS-uppercased "SUMMARY" misses — those were
+    // inaccurate assertions against correct behaviour.
+    expect(html).not.toContain("Intermittent 500 errors");
+    expect(html).toContain("Customers cannot retrieve articles.");
+  });
+
+  it("shows next action directing approved reviewers to Handoff", () => {
     const approved: CaseRecord = {
       ...record,
       status: "escalated",
@@ -303,12 +385,10 @@ describe("final case workspace presentation", () => {
     const html = renderToStaticMarkup(
       <OverviewTab record={approved} goToTab={() => undefined} />,
     );
-    expect(html).toContain("Current action");
-    expect(html).toContain("Approved for escalation");
-    expect(html).toContain(
-      "Engineering handoff is ready. Review the handoff and create the Jira escalation or Rootly incident from the Handoff tab.",
-    );
-    expect(html).toContain("Open Handoff");
+    expect(html).toContain("Next action");
+    expect(html).toContain("Open Engineering handoff");
+    expect(html).toContain("Open handoff");
+    expect(html).not.toContain("Current action");
     expect(html).not.toContain("package");
     expect(html).not.toContain("Approve escalation");
   });
@@ -318,50 +398,113 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Case details");
     expect(html).toContain("Case ID");
     expect(html).toContain("11111111");
+    expect(html).toContain(formatCaseKey(record.id));
     expect(html).toContain("Affected customer count");
     expect(html).toContain("Customer");
+    expect(html).toContain("Acme Corp");
     expect(html).toContain("Product");
+    expect(html).toContain("API v3");
     expect(html).toContain("justify-between");
     expect(html).toContain("text-right");
     expect(html).not.toContain("Created");
-    expect(html).not.toContain("Reported");
-    expect(html).not.toContain("Updated");
+    expect(html).toContain("Reported");
+    expect(html).toContain("Updated");
   });
 
   it("groups investigation with technical evidence in a secondary sidebar", () => {
-    const html = renderToStaticMarkup(<InvestigationTab record={record} />);
+    const html = renderToStaticMarkup(
+      <InvestigationTab
+        record={{
+          ...record,
+          technicalEvidence: [
+            {
+              id: "22222222-2222-4222-8222-222222222222",
+              caseId: record.id,
+              evidenceType: "api_response",
+              title: "API response — article GET",
+              service: "API v3 /articles/{id}",
+              body: "HTTP status: 500\nError: Internal Server Error",
+              caption: null,
+              capturedAt: "2026-09-08T09:14:32.000Z",
+              requestId: "req-1",
+              traceId: null,
+              externalUrl: null,
+              source: "support",
+              verificationStatus: "recorded",
+              sortOrder: 0,
+              createdAt: "2026-09-10T19:09:00.000Z",
+              updatedAt: "2026-09-10T19:09:00.000Z",
+              attachments: [],
+            },
+          ],
+        }}
+      />,
+    );
     expect(html).toContain("Investigation");
-    expect(html).toContain("Issue description");
+    expect(html).toContain("Overview");
+    expect(html).toContain("Impact &amp; timeline");
+    expect(html).toContain("Affected users");
+    expect(html).toContain("Not recorded");
+    expect(html).not.toContain("Impact scope");
+    expect(html).toContain("Affected organisations");
+    expect(html).toContain("Issue started");
+    expect(html).toContain("Frequency");
+    expect(html).toContain("Intermittent");
+    expect(html).not.toContain("Last known working");
+    expect(html).toContain("Reported");
+    expect(html).toContain("Expected vs actual behaviour");
     expect(html).toContain("Expected behaviour");
     expect(html).toContain("Actual behaviour");
+    expect(html).toContain("Customer-reported");
     expect(html).toContain("Steps to reproduce");
+    expect(html).not.toContain("Reproduction status");
+    expect(html).toContain("font-bold");
+    expect(html).toContain("Root cause");
+    expect(html).toContain("Not yet identified");
+    expect(html).toContain("Workaround");
+    expect(html).toContain("Not confirmed");
     expect(html).toContain("Troubleshooting performed");
+    expect(html).toContain("Next steps");
     expect(html).toContain("Technical evidence");
-    expect(html).toContain("Logs / errors");
-    expect(html).toContain("Call API");
+    expect(html).toContain("Add evidence");
+    expect(html).toContain("API response");
+    expect(html).toContain("View");
+    expect(html).not.toContain("Customer report");
+    expect(html).not.toContain("Customer-provided logs");
     expect(html).toContain("HTTP status: 500");
     expect(html).toContain("req-1");
-    expect(html).toContain("Affected customer count");
-    expect(html).toContain("Issue first observed");
-    expect(html).toContain("Request ID");
-    expect(html).toContain("Reproducibility");
+    expect(html).not.toContain("Add screenshot");
     expect(html).toContain(caseDetailTwoColumnGridClassName);
-    expect(html).not.toContain(">Customer<");
-    expect(html).not.toContain("Case ID");
-    // Reproducibility sits after intro copy and before Issue description
-    expect(html.indexOf("Reproducibility")).toBeLessThan(
-      html.indexOf("Issue description"),
+    // Individual section cards (not one mega-card wrapping every section)
+    expect(html.match(/rounded-\[var\(--radius-card\)\]/g)?.length ?? 0).toBeGreaterThan(
+      5,
     );
-    // Narrative fields precede technical evidence heading
-    expect(html.indexOf("Issue description")).toBeLessThan(
-      html.indexOf("Technical evidence"),
+    expect(html).not.toContain("Pending evidence");
+    expect(html).not.toContain("Datadog");
+    expect(html).not.toContain("Postman");
+    expect(html).not.toContain("Technical investigation");
+    expect(html).not.toContain("Investigation summary");
+    expect(html).not.toContain(
+      "What happened, what was tested, and what was established.",
     );
-    expect(html.indexOf("Expected behaviour")).toBeLessThan(
+    expect(html).not.toContain("Intermittent upstream failure");
+    expect(html.indexOf("Overview")).toBeLessThan(
+      html.indexOf("Impact &amp; timeline"),
+    );
+    expect(html.indexOf("Impact &amp; timeline")).toBeLessThan(
+      html.indexOf("Expected vs actual behaviour"),
+    );
+    expect(html.indexOf("Expected vs actual behaviour")).toBeLessThan(
       html.indexOf("Steps to reproduce"),
     );
     expect(html.indexOf("Steps to reproduce")).toBeLessThan(
       html.indexOf("Troubleshooting performed"),
     );
+    expect(html.indexOf("Troubleshooting performed")).toBeLessThan(
+      html.indexOf("Root cause"),
+    );
+    expect(html.indexOf("Root cause")).toBeLessThan(html.indexOf("Workaround"));
+    expect(html.indexOf("Workaround")).toBeLessThan(html.indexOf("Next steps"));
   });
 
   it("labels MS Teams requestIds as Correlation reference", () => {
@@ -374,26 +517,76 @@ describe("final case workspace presentation", () => {
     const html = renderToStaticMarkup(
       <InvestigationTab record={teamsRecord} />,
     );
-    expect(html).toContain("Correlation reference");
-    expect(html).toContain("teams-public-ch-pending");
+    expect(html).not.toContain("Placeholder · teams-public-ch-pending");
+    expect(html).not.toContain("teams-public-ch-pending");
     expect(html).not.toContain("Partial correlation note:");
+    expect(html).not.toContain("Correlation reference");
     expect(html).toContain("11 Sep 2026");
-    expect(html).not.toContain("First noticed on");
-    expect(html).not.toContain("in public channels");
+    expect(html).toContain("Issue started");
     expect(html).not.toContain("Request ID");
   });
 
-  it("exposes an interactive AI provenance badge on Reproducibility", () => {
-    const html = renderToStaticMarkup(<InvestigationTab record={record} />);
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain("AI-assessed");
-    expect(html).toContain(
-      "This value was inferred from the case evidence. AI analysis is advisory and does not determine the escalation score or final decision.",
+  it("shows a concise investigation overview and actionable reproduction steps", () => {
+    const teamsRecord: CaseRecord = {
+      ...record,
+      product: "MS Teams Integration",
+      environment: "production",
+      analysis: {
+        ...record.analysis!,
+        aiResult: {
+          ...record.analysis!.aiResult,
+          reproducibility: "intermittent",
+        },
+      },
+      issueTitle:
+        "[DEMO] MS Teams Auto-Answer fails to respond in public channels",
+      issueDescription: [
+        "MS Teams Auto-Answer fails to respond in public channels while still working in some private channels.",
+        "Investigation is ongoing. Channel permissions or bot membership may still need to be ruled out.",
+      ].join("\n"),
+      actualBehaviour:
+        "Auto-Answer fails to respond in public channels while continuing to respond in some private channels.",
+      logsErrors: [
+        "Customer-provided note: Auto-Answer timeout in public channel.",
+        "No complete webhook or bot-permission log package yet.",
+      ].join("\n"),
+      requestIds: "Partial correlation note: teams-public-ch-pending",
+      stepsToReproduce: [
+        "1. Open a public Teams channel where Auto-Answer is expected.",
+        "2. Trigger the Auto-Answer flow.",
+        "3. Observe that Auto-Answer does not respond.",
+        "4. Retry in a private channel where Auto-Answer still responds.",
+        "5. Behaviour is intermittent across channel types; controlled reproduction is incomplete.",
+      ].join("\n"),
+    };
+    const html = renderToStaticMarkup(
+      <InvestigationTab record={teamsRecord} />,
     );
-    expect(html).toContain('role="tooltip"');
-    expect(html).toContain("Activate for explanation");
-    // Compact badge label remains "AI"; case-specific reasoning stays elsewhere
-    expect(html).toMatch(/>AI</);
+    expect(html).toContain("Affected product");
+    expect(html).toContain("MS Teams Integration");
+    expect(html).toContain(
+      "MS Teams Auto-Answer fails to respond in public channels while still working in some private channels.",
+    );
+    expect(html).not.toContain("Investigation is ongoing");
+    expect(html).not.toContain("MS Teams Integration · production");
+    expect(html).toContain("Open a public Teams channel");
+    expect(html).toContain("Unknown");
+    expect(html).not.toContain("AI interpretation");
+    expect(html).not.toContain("Reproduction status");
+    expect(html).not.toContain("Reproduction result");
+    expect(html).not.toContain("controlled reproduction is incomplete");
+    expect(html).toContain("No technical evidence recorded yet");
+    expect(html).not.toContain("Customer report");
+    expect(html).not.toMatch(
+      /<li[^>]*>Behaviour is intermittent across channel types/i,
+    );
+  });
+
+  it("shows root cause as not yet identified rather than AI hypothesis", () => {
+    const html = renderToStaticMarkup(<InvestigationTab record={record} />);
+    expect(html).toContain("Root cause");
+    expect(html).toContain("Not yet identified");
+    expect(html).not.toContain("Intermittent upstream failure");
     expect(html).not.toContain("Detailed AI reasoning that should be disclosed.");
   });
 
@@ -474,14 +667,13 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain(">Case ID<");
   });
 
-  it("renders compact timeline summary without listing events by default", () => {
+  it("renders recent activity preview of the latest events by default", () => {
     const html = renderToStaticMarkup(<CaseTimeline events={events} />);
-    expect(html).toContain("Timeline");
-    expect(html).toContain("Events");
-    expect(html).toContain("History");
-    expect(html).toContain("View timeline");
-    expect(html).not.toContain("2 events");
-    expect(html).not.toContain("Case created");
+    expect(html).toContain("Recent activity");
+    expect(html).toContain("2 events");
+    expect(html).toContain("View full timeline");
+    expect(html).toContain("Case reported");
+    expect(html).toContain("Escalation assessed");
     expect(html).not.toContain("Collapse timeline");
     expect(html).not.toContain("View technical audit data");
   });
@@ -517,43 +709,23 @@ describe("final case workspace presentation", () => {
     );
   });
 
-  it("keeps issue header compact with Reported and Updated", () => {
+  it("keeps issue header to title and badges without duplicated case metadata", () => {
     const html = renderToStaticMarkup(<CaseIssueHeader record={record} />);
     expect(html).toContain("Back to cases");
-    expect(html).toContain("Demo case");
-    expect(html).toContain("Fictional data");
     expect(html).toContain("Intermittent 500 errors");
     expect(html).not.toContain("[DEMO]");
-    expect(html).not.toContain(`Case ${formatCaseKey(record.id)}`);
+    expect(html).not.toContain("Demo case");
+    expect(html).not.toContain("Fictional data");
+    expect(html).not.toContain(formatCaseKey(record.id));
     expect(html).not.toContain(">Case ID<");
-    expect(html).toContain("Reported");
-    expect(html).toContain("Updated");
-    expect(html).not.toContain(">Created");
+    expect(html).not.toContain("Acme Corp");
+    expect(html).not.toContain("API v3");
+    expect(html).not.toContain("Reported");
+    expect(html).not.toContain("Updated");
 
-    const customer = html.indexOf("Customer:");
     const title = html.indexOf("Intermittent 500 errors");
     const severity = html.indexOf(">high<");
-    expect(customer).toBeGreaterThan(-1);
-    expect(title).toBeGreaterThan(customer);
+    expect(title).toBeGreaterThan(-1);
     expect(severity).toBeGreaterThan(title);
-  });
-
-  it("renders customer/product as muted metadata without highlight or badge styling", () => {
-    const html = renderToStaticMarkup(<CaseIssueHeader record={record} />);
-    expect(html).toContain("Customer:");
-    expect(html).toContain("Product:");
-    expect(html).toContain("Acme Corp");
-    expect(html).toContain("API v3");
-    expect(html).toContain("·");
-    expect(html).toContain("text-slate-500");
-    expect(html).toContain("text-slate-700");
-    expect(html).toContain("bg-transparent");
-    // Metadata line must not pick up warning/highlight treatments
-    expect(html).not.toMatch(
-      /Acme Corp[\s\S]{0,120}(?:bg-amber|bg-yellow|<mark)/,
-    );
-    expect(html).not.toMatch(
-      /(?:bg-amber|bg-yellow|<mark)[\s\S]{0,120}Acme Corp/,
-    );
   });
 });

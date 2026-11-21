@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CaseListTable } from "@/components/cases/CaseListTable";
 import { formatDateTime, formatDateTimeParts } from "@/lib/format";
-import { formatRecommendationLabel } from "@/lib/ui/case-display";
+import {
+  formatCaseKey,
+  formatRecommendationLabel,
+} from "@/lib/ui/case-display";
 import type { SupportCaseSummary } from "@/types";
 
 const cases: SupportCaseSummary[] = [
@@ -71,37 +74,44 @@ describe("dashboard case list presentation", () => {
     });
   });
 
-  it("renders Support Ops columns with Reported first and readable cells", () => {
+  it("renders Case ID and Issue as separate columns without row metadata", () => {
     const html = renderToStaticMarkup(<CaseListTable cases={cases} />);
 
-    const reported = html.indexOf(">Reported<");
+    const caseId = html.indexOf(">Case ID<");
+    const issue = html.indexOf(">Issue<");
     const customer = html.indexOf(">Customer<");
     const severity = html.indexOf(">Severity<");
-    const issue = html.indexOf(">Issue<");
-    const product = html.indexOf(">Product<");
-    const environment = html.indexOf(">Environment<");
     const status = html.indexOf(">Status<");
     const recommendation = html.indexOf(">Recommendation<");
+    const updated = html.indexOf(">Updated<");
 
-    expect(reported).toBeGreaterThan(-1);
-    expect(customer).toBeGreaterThan(reported);
+    expect(caseId).toBeGreaterThan(-1);
+    expect(issue).toBeGreaterThan(caseId);
+    expect(customer).toBeGreaterThan(issue);
     expect(severity).toBeGreaterThan(customer);
-    expect(issue).toBeGreaterThan(severity);
-    expect(product).toBeGreaterThan(issue);
-    expect(environment).toBeGreaterThan(product);
-    expect(status).toBeGreaterThan(environment);
+    expect(status).toBeGreaterThan(severity);
     expect(recommendation).toBeGreaterThan(status);
+    expect(updated).toBeGreaterThan(recommendation);
 
-    expect(html).not.toContain(">Engine<");
-    expect(html).not.toContain(">Created<");
+    expect(html).not.toContain(">Reported<");
+    expect(html).not.toContain(">Product<");
+    expect(html).not.toContain(">Environment<");
+    expect(html).not.toContain("Reported ");
+    expect(html).not.toContain("min-w-[78rem]");
+    expect(html).toContain("table-fixed");
+    expect(html).toContain("xl:block");
+    expect(html).toContain("xl:hidden");
+    expect(html).toContain("width:32%");
+    expect(html).toContain("width:9%");
+    expect(html).toContain("whitespace-nowrap");
 
     expect(html).toContain("Northstar Financial");
     expect(html).toContain("Apex Digital");
     expect(html).toContain("Meridian Systems");
     expect(html).not.toContain("[DEMO]");
-    expect(html).toContain("API v3");
-    expect(html).toContain("SSO");
-    expect(html).toContain("MS Teams Integration");
+    expect(html).toContain(formatCaseKey(cases[0].id));
+    expect(html).not.toContain("MS Teams Integration ·");
+    expect(html).not.toContain("SSO ·");
     expect(html).toContain(
       "Intermittent 500 errors when retrieving articles through API v3",
     );
@@ -111,25 +121,17 @@ describe("dashboard case list presentation", () => {
     expect(html).toContain(
       "MS Teams Auto-Answer fails to respond in public channels",
     );
-    expect(html).toContain("line-clamp-2");
-    expect(html).toContain("pl-4");
-    expect(html).toContain("sm:pl-5");
-    expect(html).toContain("w-[7.5rem]");
 
     expect(html).toContain("Escalate");
-    expect(html).not.toContain("· 98");
-    expect(html).not.toContain("· 63");
-    expect(html).not.toContain("· 35");
+    expect(html).not.toContain("98/100");
+    expect(html).not.toContain("58/100");
+    expect(html).not.toContain("20/100");
     expect(html).toContain("Continue investigation");
     expect(html).toContain("Insufficient evidence");
     expect(html).toContain(`/cases/${cases[2].id}`);
-    expect(html).toContain("table-fixed");
-    expect(html).toContain("min-w-[78rem]");
 
-    // Dashboard Reported: date only (no time)
     expect(html).toContain(">8 Sep 2026<");
     expect(html).toContain(">11 Sep 2026<");
     expect(html).toContain(">12 Sep 2026<");
-    expect(html).not.toMatch(/>\d{1,2} Sep 2026, \d{2}:\d{2}</);
   });
 });

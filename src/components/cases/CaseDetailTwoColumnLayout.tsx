@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 
 /**
- * Shared case-detail desktop proportions (~72% / ~28%).
+ * Shared case-detail desktop proportions (~70% / ~30%).
  * Use across Overview, Investigation, Escalation Assessment, and Handoff
  * so the sidebar does not shift when switching tabs.
  */
 export const caseDetailTwoColumnGridClassName =
-  "grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28%)]";
+  "grid gap-6 lg:gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,30%)]";
 
 type CaseDetailTwoColumnLayoutProps = {
   main: ReactNode;
@@ -30,13 +30,9 @@ export function CaseDetailTwoColumnLayout({
 }: CaseDetailTwoColumnLayoutProps) {
   return (
     <div className={caseDetailTwoColumnGridClassName}>
-      <div
-        className={`min-w-0 order-1 ${mainClassName}`.trim()}
-      >
-        {main}
-      </div>
+      <div className={`min-w-0 order-1 ${mainClassName}`.trim()}>{main}</div>
       <aside
-        className={`min-w-0 order-2 overflow-x-hidden border-t border-slate-200 pt-6 lg:border-t-0 lg:pt-0 ${sidebarClassName}`.trim()}
+        className={`min-w-0 order-2 overflow-x-hidden border-t border-border pt-6 lg:border-t-0 lg:pt-0 ${sidebarClassName}`.trim()}
       >
         {sidebar}
       </aside>

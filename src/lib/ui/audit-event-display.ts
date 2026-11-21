@@ -12,6 +12,12 @@ const EVENT_LABELS: Record<CaseEventType, string> = {
   engineering_handoff_created: "Engineering handoff created",
   decision_recorded: "Decision recorded",
   status_changed: "Status changed",
+  ticket_imported: "Support ticket imported",
+  technical_evidence_added: "Technical evidence added",
+  technical_evidence_updated: "Technical evidence updated",
+  technical_evidence_deleted: "Technical evidence deleted",
+  technical_evidence_attachment_added: "Evidence screenshot attached",
+  technical_evidence_attachment_deleted: "Evidence screenshot removed",
 };
 
 /** Presentation label for an audit event type — no new semantics. */

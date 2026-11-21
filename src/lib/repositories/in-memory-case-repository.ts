@@ -69,6 +69,11 @@ export class InMemoryCaseRepository implements CaseRepository {
         ? input.issueFirstObserved.trim()
         : null,
       affectedCustomerCount: input.affectedCustomerCount ?? null,
+      sourceSystem: input.sourceSystem ?? null,
+      externalTicketId: input.externalTicketId?.trim()
+        ? input.externalTicketId.trim()
+        : null,
+      externalUrl: input.externalUrl?.trim() ? input.externalUrl.trim() : null,
       status,
       createdAt: now,
       updatedAt: now,
@@ -90,6 +95,21 @@ export class InMemoryCaseRepository implements CaseRepository {
 
     this.cases.set(id, record);
     return this.toSupportCase(record);
+  }
+
+  async findByExternalTicket(
+    sourceSystem: string,
+    externalTicketId: string,
+  ): Promise<SupportCase | null> {
+    for (const record of this.cases.values()) {
+      if (
+        record.sourceSystem === sourceSystem &&
+        record.externalTicketId === externalTicketId
+      ) {
+        return this.toSupportCase(record);
+      }
+    }
+    return null;
   }
 
   async getCaseById(id: string): Promise<CaseRecord | null> {
@@ -305,6 +325,9 @@ export class InMemoryCaseRepository implements CaseRepository {
       incidentTimestamp: record.incidentTimestamp,
       issueFirstObserved: record.issueFirstObserved,
       affectedCustomerCount: record.affectedCustomerCount,
+      sourceSystem: record.sourceSystem ?? null,
+      externalTicketId: record.externalTicketId ?? null,
+      externalUrl: record.externalUrl ?? null,
       status: record.status,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

@@ -1,27 +1,28 @@
 import type { CaseStatus, Environment, Severity } from "@/types";
 
+/** Cool grey neutrals; escalated uses soft danger for attention. */
 const STATUS_STYLES: Record<CaseStatus, string> = {
-  draft: "bg-slate-100 text-slate-700 ring-slate-200",
-  submitted: "bg-sky-50 text-sky-800 ring-sky-200",
-  analyzing: "bg-amber-50 text-amber-900 ring-amber-200",
-  awaiting_decision: "bg-violet-50 text-violet-800 ring-violet-200",
-  escalated: "bg-emerald-50 text-emerald-800 ring-emerald-200",
-  investigation_continues: "bg-orange-50 text-orange-900 ring-orange-200",
-  closed: "bg-slate-100 text-slate-700 ring-slate-200",
+  draft: "bg-subtle text-muted ring-border",
+  submitted: "bg-subtle text-foreground ring-border",
+  analyzing: "bg-warning-soft text-warning ring-amber-200",
+  awaiting_decision: "bg-subtle text-foreground ring-border",
+  escalated: "bg-danger-soft text-danger ring-red-200",
+  investigation_continues: "bg-subtle text-foreground ring-border",
+  closed: "bg-subtle text-muted ring-border",
 };
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  critical: "bg-red-100 text-red-800 ring-red-200",
-  high: "bg-red-50 text-red-700 ring-red-200",
-  medium: "bg-amber-50 text-amber-900 ring-amber-200",
-  low: "bg-slate-100 text-slate-700 ring-slate-200",
+  critical: "bg-danger-soft text-danger ring-red-200",
+  high: "bg-danger-soft text-danger ring-red-200",
+  medium: "bg-warning-soft text-warning ring-amber-200",
+  low: "bg-subtle text-muted ring-border",
 };
 
 const ENVIRONMENT_STYLES: Record<Environment, string> = {
-  production: "bg-sky-50 text-sky-800 ring-sky-200",
-  staging: "bg-slate-100 text-slate-700 ring-slate-200",
-  development: "bg-slate-100 text-slate-700 ring-slate-200",
-  unknown: "bg-slate-50 text-slate-600 ring-slate-200",
+  production: "bg-subtle text-foreground ring-border",
+  staging: "bg-subtle text-muted ring-border",
+  development: "bg-subtle text-muted ring-border",
+  unknown: "bg-subtle text-muted ring-border",
 };
 
 type StatusBadgeProps = {

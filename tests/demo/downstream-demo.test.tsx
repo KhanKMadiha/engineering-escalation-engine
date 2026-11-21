@@ -244,7 +244,8 @@ describe("handoff UI downstream gating", () => {
     expect(html).toContain("✓ Approved");
     expect(html).not.toContain("Escalation approved");
     expect(html).toContain("Ready for Engineering");
-    expect(html).toContain("View full engineering handoff");
+    expect(html).toContain("Handoff document");
+    expect(html).toContain("Copy handoff");
     expect(html).toContain("Create Jira escalation");
     expect(html).toContain("Create Rootly incident");
     expect(html).toContain("Demo integration");

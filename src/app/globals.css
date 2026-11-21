@@ -1,16 +1,74 @@
 @import "tailwindcss";
 
+/**
+ * Support Operations visual system — light enterprise SaaS.
+ * Presentation only; does not affect domain behaviour.
+ *
+ * Predominantly white. Strong colour reserved for severity, warnings,
+ * approvals, and errors. Warm taupe (#B2A397) used sparingly.
+ */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f8f9fa;
+  --foreground: #20242a;
   --surface: #ffffff;
-  --border: #e2e8f0;
-  --muted: #64748b;
+  --border: #e5e7eb;
+  --muted: #667085;
+  --subtle: #f3f4f6;
+
+  --sidebar: #f9fafb;
+  --sidebar-foreground: #20242a;
+  --sidebar-muted: #667085;
+  --sidebar-active: #e9edf2;
+  --sidebar-active-foreground: #20242a;
+  --sidebar-accent: #344256;
+  --sidebar-border: #e5e7eb;
+
+  --accent: #344256;
+  --accent-foreground: #ffffff;
+  --accent-hover: #2a3444;
+  --accent-soft: #f3f4f6;
+
+  --warm: #b2a397;
+
+  --danger: #b42318;
+  --danger-soft: #fef3f2;
+  --warning: #b54708;
+  --warning-soft: #fffaeb;
+  --success: #067647;
+  --success-soft: #ecfdf3;
+
+  --radius-card: 0.5rem;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04),
+    0 1px 3px rgba(16, 24, 40, 0.06);
+  --content-pad-x: 1.25rem;
+  --content-pad-y: 1.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-warm: var(--warm);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -19,4 +77,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --content-pad-x: 1.75rem;
+    --content-pad-y: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --content-pad-x: 2.25rem;
+    --content-pad-y: 2rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --content-pad-x: 2.75rem;
+  }
 }

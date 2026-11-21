@@ -4,19 +4,19 @@ import { CaseTimeline } from "@/components/cases/CaseTimeline";
 import {
   AnalysisRunPrompt,
   recommendationLabel,
-  recommendationTone,
 } from "@/components/cases/EscalationAssessmentCard";
+import { EscalationReadinessScore } from "@/components/cases/EscalationReadinessScore";
 import { HumanDecisionPanel } from "@/components/cases/HumanDecisionPanel";
 import { HumanDecisionResultPanel } from "@/components/cases/HumanDecisionResultPanel";
 import type { CaseTabId } from "@/components/cases/CaseWorkspaceTabs";
+import { Card, CardHeader } from "@/components/ui/Card";
 import { stripDemoDescriptionBoilerplate } from "@/lib/demo/demo-cases";
 import {
-  formatSignalLabel,
-  qualifyingFactors,
   shortenText,
   troubleshootingSummaryLines,
 } from "@/lib/ui/case-display";
-import type { CaseRecord } from "@/types";
+import { buildOverviewEvidenceSummary } from "@/lib/ui/overview-evidence-summary";
+import type { CaseRecord, EscalationRecommendation } from "@/types";
 
 type OverviewTabProps = {
   record: CaseRecord;
@@ -24,7 +24,8 @@ type OverviewTabProps = {
 };
 
 /**
- * Operational control surface: summary, recommendation, human decision.
+ * Case Detail Overview — recommendation, next action, investigation snapshot.
+ * Presentation only; scoring, approval and handoff gates unchanged.
  */
 export function OverviewTab({ record, goToTab }: OverviewTabProps) {
   const awaitingDecision =
@@ -37,68 +38,93 @@ export function OverviewTab({ record, goToTab }: OverviewTabProps) {
 
   const summaryLines = troubleshootingSummaryLines(
     record.troubleshootingPerformed,
+    3,
   );
 
   return (
     <CaseDetailTwoColumnLayout
-      mainClassName="space-y-8"
+      mainClassName="space-y-6"
+      sidebarClassName="space-y-6"
       main={
         <>
-          <section>
-            <h2 className="text-base font-semibold text-slate-900">
-              Investigation summary
-            </h2>
-            <div className="mt-4 space-y-4">
+          {record.escalationResult ? (
+            <StatusRecommendationHero
+              record={record}
+              onViewAssessment={() => goToTab("assessment")}
+            />
+          ) : null}
+
+          {/* When the decision form is visible, skip Next action — it would only repeat the same instruction. */}
+          {record.escalationResult && !awaitingDecision ? (
+            <NextActionSection
+              record={record}
+              onOpenTab={goToTab}
+            />
+          ) : null}
+
+          {awaitingDecision && record.escalationResult ? (
+            <Card padding="lg" className="border-border bg-surface">
+              <HumanDecisionPanel
+                caseId={record.id}
+                escalationResult={record.escalationResult}
+              />
+            </Card>
+          ) : null}
+
+          <Card padding="lg">
+            <CardHeader title="Investigation summary" />
+            <div className="space-y-5">
               <div>
-                <h3 className="text-xs font-medium text-slate-500">
+                <h3 className="text-sm font-medium text-muted">
                   Issue description
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-900">
+                <p className="mt-1.5 text-[15px] leading-relaxed text-foreground">
                   {shortenText(
                     stripDemoDescriptionBoilerplate(record.issueDescription),
-                    220,
+                    280,
                   ) || "—"}
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <h3 className="text-xs font-medium text-slate-500">
+                  <h3 className="text-sm font-medium text-muted">
                     Expected behaviour
                   </h3>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-900">
+                  <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
                     {record.expectedBehaviour || "—"}
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-xs font-medium text-slate-500">
+                  <h3 className="text-sm font-medium text-muted">
                     Actual behaviour
                   </h3>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-900">
+                  <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
                     {record.actualBehaviour || "—"}
                   </p>
                 </div>
               </div>
               {summaryLines.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {summaryLines.map((line) => (
-                    <li key={line} className="flex gap-2 text-sm text-slate-800">
-                      <span className="text-slate-400" aria-hidden>
-                        •
-                      </span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div>
+                  <h3 className="text-sm font-medium text-muted">
+                    Relevant findings
+                  </h3>
+                  <ul className="mt-2 space-y-1.5">
+                    {summaryLines.map((line) => (
+                      <li
+                        key={line}
+                        className="flex gap-2 text-[15px] text-foreground"
+                      >
+                        <span className="text-muted" aria-hidden>
+                          •
+                        </span>
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ) : null}
-              <button
-                type="button"
-                onClick={() => goToTab("investigation")}
-                className="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-              >
-                View investigation →
-              </button>
             </div>
-          </section>
+          </Card>
 
           {!record.analysis &&
           (record.status === "draft" ||
@@ -111,49 +137,11 @@ export function OverviewTab({ record, goToTab }: OverviewTabProps) {
             />
           ) : null}
 
-          {record.escalationResult ? (
-            <OverviewRecommendation
-              record={record}
-              onViewAssessment={() => goToTab("assessment")}
-            />
-          ) : null}
-
-          {awaitingDecision && record.escalationResult ? (
-            <HumanDecisionPanel
-              caseId={record.id}
-              escalationResult={record.escalationResult}
-            />
-          ) : null}
-
           {record.decision && !approved ? (
             <HumanDecisionResultPanel
               decision={record.decision}
               caseStatus={record.status}
             />
-          ) : null}
-
-          {approved ? (
-            <section className="border-t border-slate-200 pt-7">
-              <h2 className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Current action
-              </h2>
-              <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p className="text-sm font-semibold text-emerald-950">
-                  ✓ Approved for escalation
-                </p>
-                <p className="mt-1.5 text-sm text-emerald-950/90">
-                  Engineering handoff is ready. Review the handoff and create the
-                  Jira escalation or Rootly incident from the Handoff tab.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => goToTab("handoff")}
-                  className="mt-3 text-sm font-medium text-sky-800 hover:text-sky-950 hover:underline"
-                >
-                  Open Handoff →
-                </button>
-              </div>
-            </section>
           ) : null}
         </>
       }
@@ -167,7 +155,13 @@ export function OverviewTab({ record, goToTab }: OverviewTabProps) {
   );
 }
 
-function OverviewRecommendation({
+/** Sentence-case recommendation for Overview hierarchy (presentation only). */
+function recommendationHeadline(value: EscalationRecommendation): string {
+  const raw = recommendationLabel(value).toLowerCase();
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function StatusRecommendationHero({
   record,
   onViewAssessment,
 }: {
@@ -175,48 +169,65 @@ function OverviewRecommendation({
   onViewAssessment: () => void;
 }) {
   const result = record.escalationResult!;
-  const checklist = qualifyingFactors(result.contributingFactors).slice(0, 6);
+  const label = recommendationHeadline(result.recommendation);
+  const evidence = buildOverviewEvidenceSummary(record);
 
   return (
-    <section className="border-t border-slate-200 pt-7">
-      <h2 className="text-base font-semibold text-slate-900">
-        Escalation recommendation
-      </h2>
-      <div
-        className={`mt-3 inline-flex rounded border px-3 py-2 text-sm font-semibold tracking-wide ${recommendationTone(result.recommendation)}`}
-      >
-        {result.recommendation === "escalate" ? "✓ " : null}
-        {recommendationLabel(result.recommendation)}
-      </div>
-
-      <ul className="mt-4 space-y-1.5">
-        {checklist.map((factor) => (
-          <li
-            key={`${factor.signal}-${factor.reason}`}
-            className="flex gap-2 text-sm text-slate-800"
+    <Card padding="lg" className="border-border">
+      <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div className="min-w-0 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Escalation recommendation
+          </p>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            {result.recommendation === "escalate" ? "✓ " : null}
+            {label}
+          </h2>
+          <p className="max-w-2xl text-[15px] leading-relaxed text-muted">
+            {evidence.recommendationExplanation}
+          </p>
+          <button
+            type="button"
+            onClick={onViewAssessment}
+            className="text-sm font-medium text-accent hover:text-accent-hover hover:underline"
           >
-            <span
-              className={
-                factor.direction === "decreases"
-                  ? "text-slate-400"
-                  : "text-emerald-600"
-              }
-              aria-hidden
-            >
-              {factor.direction === "decreases" ? "–" : "✓"}
-            </span>
-            <span>{formatSignalLabel(factor.signal)}</span>
-          </li>
-        ))}
-      </ul>
+            View full assessment →
+          </button>
+        </div>
 
+        <EscalationReadinessScore score={result.escalationScore} />
+      </div>
+    </Card>
+  );
+}
+
+function NextActionSection({
+  record,
+  onOpenTab,
+}: {
+  record: CaseRecord;
+  onOpenTab: (tab: CaseTabId) => void;
+}) {
+  const { nextAction } = buildOverviewEvidenceSummary(record);
+
+  return (
+    <Card padding="lg" className="border-border">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+        Next action
+      </p>
+      <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+        {nextAction.title}
+      </h2>
+      <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
+        {nextAction.summary}
+      </p>
       <button
         type="button"
-        onClick={onViewAssessment}
-        className="mt-4 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+        onClick={() => onOpenTab(nextAction.targetTab)}
+        className="mt-3 text-sm font-medium text-accent hover:text-accent-hover hover:underline"
       >
-        View escalation assessment →
+        {nextAction.actionLabel} →
       </button>
-    </section>
+    </Card>
   );
 }

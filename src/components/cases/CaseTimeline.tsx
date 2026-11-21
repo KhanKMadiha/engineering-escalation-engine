@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Disclosure } from "@/components/ui/Disclosure";
-import { SidebarMetaRow } from "@/components/cases/SidebarMetaRow";
 import {
   auditEventDetail,
   auditEventDisplayLabel,
@@ -15,80 +14,71 @@ type CaseTimelineProps = {
   events: CaseEvent[];
 };
 
+const PREVIEW_COUNT = 3;
+
 /**
- * Overview sidebar Timeline — compact by default; expanded replaces compact.
+ * Overview sidebar recent activity — latest audit events, then full timeline.
  * Presentation only; does not invent or mutate events.
- * Placed beneath Case Details as secondary audit/history context.
  */
 export function CaseTimeline({ events }: CaseTimelineProps) {
   const [expanded, setExpanded] = useState(false);
-  const ordered = [...events].sort((a, b) =>
-    a.createdAt.localeCompare(b.createdAt),
+  const orderedNewestFirst = [...events].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
   );
-  const count = ordered.length;
+  const orderedOldestFirst = [...orderedNewestFirst].reverse();
+  const preview = orderedNewestFirst.slice(0, PREVIEW_COUNT);
+  const count = orderedNewestFirst.length;
 
   return (
-    <aside className="mt-6 border-t border-slate-200 pt-6">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        Timeline
-      </h2>
+    <aside className="rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Recent activity
+        </h2>
+        {count > 0 ? (
+          <p className="text-xs tabular-nums text-muted">
+            {count} event{count === 1 ? "" : "s"}
+          </p>
+        ) : null}
+      </div>
 
-      {!expanded ? (
-        <dl className="mt-3 space-y-2">
-          <SidebarMetaRow label="Events">{count}</SidebarMetaRow>
-          <SidebarMetaRow label="History">
-            {count === 0 ? (
-              <span className="text-slate-500">—</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                className="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-              >
-                View timeline →
-              </button>
-            )}
-          </SidebarMetaRow>
-        </dl>
-      ) : (
-        <div className="mt-3">
-          <dl className="mb-3 space-y-2">
-            <SidebarMetaRow label="Events">{count}</SidebarMetaRow>
-          </dl>
+      {count === 0 ? (
+        <p className="mt-3 text-sm text-muted">No recorded events yet.</p>
+      ) : !expanded ? (
+        <div className="mt-4">
           <ol className="space-y-0">
-            {ordered.map((event) => {
-              const detail = auditEventDetail(event);
-              return (
-                <li
-                  key={event.id}
-                  className="relative border-l border-slate-200 pb-3 pl-3 last:pb-0"
-                >
-                  <span
-                    aria-hidden
-                    className="absolute -left-[4px] top-1.5 h-2 w-2 rounded-full border border-slate-300 bg-white"
-                  />
-                  <p className="text-xs leading-snug text-slate-800">
-                    {auditEventDisplayLabel(event)}
-                    {detail ? (
-                      <span className="text-slate-500"> · {detail}</span>
-                    ) : null}
-                  </p>
-                  <time
-                    dateTime={event.createdAt}
-                    className="mt-0.5 block font-mono text-[10px] text-slate-500"
-                    title={formatDateTime(event.createdAt)}
-                  >
-                    {formatAuditTime(event.createdAt)}
-                  </time>
-                </li>
-              );
-            })}
+            {preview.map((event, index) => (
+              <ActivityRow
+                key={event.id}
+                event={event}
+                isLatest={index === 0}
+              />
+            ))}
+          </ol>
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="mt-4 text-sm font-medium text-accent hover:text-accent-hover hover:underline"
+          >
+            View full timeline →
+          </button>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <ol className="space-y-0">
+            {orderedOldestFirst.map((event, index) => (
+              <ActivityRow
+                key={event.id}
+                event={event}
+                isLatest={index === orderedOldestFirst.length - 1}
+              />
+            ))}
           </ol>
 
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="mt-3 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+            className="mt-4 text-sm font-medium text-accent hover:text-accent-hover hover:underline"
           >
             Collapse timeline ↑
           </button>
@@ -96,21 +86,21 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
           <div className="mt-3">
             <Disclosure summary="View technical audit data" variant="link">
               <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto">
-                {ordered.map((event) => (
+                {orderedOldestFirst.map((event) => (
                   <li
                     key={`tech-${event.id}`}
-                    className="rounded border border-slate-100 bg-slate-50 px-2 py-1.5"
+                    className="rounded border border-border bg-subtle px-2 py-1.5"
                   >
-                    <p className="font-mono text-[10px] text-slate-600">
+                    <p className="font-mono text-[10px] text-muted">
                       {event.eventType} · {formatDateTime(event.createdAt)}
                     </p>
                     {event.metadata &&
                     Object.keys(event.metadata).length > 0 ? (
-                      <pre className="mt-1 overflow-x-auto font-mono text-[10px] leading-relaxed text-slate-700">
+                      <pre className="mt-1 overflow-x-auto font-mono text-[10px] leading-relaxed text-foreground">
                         {JSON.stringify(event.metadata, null, 2)}
                       </pre>
                     ) : (
-                      <p className="mt-0.5 text-[10px] text-slate-500">
+                      <p className="mt-0.5 text-[10px] text-muted">
                         No metadata
                       </p>
                     )}
@@ -122,5 +112,45 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
         </div>
       )}
     </aside>
+  );
+}
+
+function ActivityRow({
+  event,
+  isLatest,
+}: {
+  event: CaseEvent;
+  isLatest: boolean;
+}) {
+  const detail = auditEventDetail(event);
+
+  return (
+    <li className="relative border-l border-border pb-4 pl-4 last:pb-0">
+      <span
+        aria-hidden
+        className={`absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full border ${
+          isLatest
+            ? "border-accent bg-accent"
+            : "border-border bg-surface"
+        }`}
+      />
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-medium leading-snug text-foreground">
+            {auditEventDisplayLabel(event)}
+          </p>
+          {detail ? (
+            <p className="mt-0.5 text-xs leading-snug text-muted">{detail}</p>
+          ) : null}
+        </div>
+        <time
+          dateTime={event.createdAt}
+          className="shrink-0 font-mono text-[10px] text-muted"
+          title={formatDateTime(event.createdAt)}
+        >
+          {formatAuditTime(event.createdAt)}
+        </time>
+      </div>
+    </li>
   );
 }

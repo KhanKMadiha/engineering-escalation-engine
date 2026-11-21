@@ -124,6 +124,26 @@ export const createCaseInputSchema = z.object({
       }
       return numeric;
     }),
+  sourceSystem: z
+    .enum(["manual", "freshdesk", "demo_freshdesk"])
+    .nullish()
+    .transform((value) => value ?? null),
+  externalTicketId: z
+    .string()
+    .nullish()
+    .transform((value) => {
+      if (value == null) return null;
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed.slice(0, 200);
+    }),
+  externalUrl: z
+    .string()
+    .nullish()
+    .transform((value) => {
+      if (value == null) return null;
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed.slice(0, 2_000);
+    }),
 });
 
 export type CreateCaseFormValues = z.infer<typeof createCaseInputSchema>;
