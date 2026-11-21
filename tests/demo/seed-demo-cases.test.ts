@@ -33,11 +33,12 @@ describe("demo seed", () => {
     ).toThrow(/production/);
   });
 
-  it("seeds three lifecycle-stage demo cases with valid workflow statuses", async () => {
+  it("seeds ten lifecycle-stage demo cases with valid workflow statuses", async () => {
     const repo = new InMemoryCaseRepository();
     const result = await seedDemoCases({ repository: repo });
 
-    expect(result.seeded).toHaveLength(3);
+    expect(result.seeded).toHaveLength(DEMO_CASE_DEFINITIONS.length);
+    expect(DEMO_CASE_DEFINITIONS).toHaveLength(10);
     expect(result.skippedExistingTitles).toEqual([]);
     expect(result.leftoverDemoTitles).toEqual([]);
 
@@ -89,13 +90,20 @@ describe("demo seed", () => {
     expect(teamsRecord?.decision?.decidedAt).toBe("2026-09-12T14:40:00.000Z");
 
     const listed = await repo.listCases();
-    expect(listed.map((item) => item.product)).toEqual([
-      "MS Teams Integration",
-      "SSO",
-      "API v3",
-    ]);
+    expect(listed).toHaveLength(10);
+    // Newest reported first
+    expect(listed[0]?.createdAt).toBe("2026-11-05T09:35:00.000Z");
+    expect(listed[listed.length - 1]?.createdAt).toBe(
+      "2026-01-22T15:40:00.000Z",
+    );
+    const months = new Set(
+      listed.map((item) => item.createdAt.slice(0, 7)),
+    );
+    expect(months.size).toBeGreaterThanOrEqual(8);
+    expect(months.has("2026-11")).toBe(true);
 
-    for (const seededCase of [clearRecord, ssoRecord, teamsRecord]) {
+    for (const seeded of result.seeded) {
+      const seededCase = await repo.getCaseWithDetails(seeded.caseId);
       expect(seededCase).toBeDefined();
       expect(seededCase!.issueTitle).toContain(DEMO_CASE_MARKER);
       const events = [...seededCase!.events].sort((a, b) =>
@@ -140,12 +148,12 @@ describe("demo seed", () => {
   it("skips duplicate titles on re-seed", async () => {
     const repo = new InMemoryCaseRepository();
     const first = await seedDemoCases({ repository: repo });
-    expect(first.seeded).toHaveLength(3);
+    expect(first.seeded).toHaveLength(10);
     expect(first.staleSkipped).toEqual([]);
 
     const second = await seedDemoCases({ repository: repo });
     expect(second.seeded).toHaveLength(0);
-    expect(second.skippedExistingTitles).toHaveLength(3);
+    expect(second.skippedExistingTitles).toHaveLength(10);
     expect(second.staleSkipped).toEqual([]);
   });
 
@@ -172,10 +180,8 @@ describe("demo seed", () => {
         expectedCustomer: definition!.createInput.customer,
       }),
     ]);
-    expect(result.seeded.map((s) => s.key).sort()).toEqual([
-      "continue_investigation",
-      "insufficient_evidence",
-    ]);
+    expect(result.seeded).toHaveLength(9);
+    expect(result.seeded.map((s) => s.key)).not.toContain("clear_escalation");
   });
 
   it("reports stale customer when an existing demo title still stores Example Enterprise A", async () => {

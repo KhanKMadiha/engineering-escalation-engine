@@ -7,6 +7,7 @@ import type {
   CaseEvent,
   CaseEventType,
   CaseRecord,
+  CaseSourceSystem,
   CaseStatus,
   CreateCaseInput,
   Environment,
@@ -37,6 +38,9 @@ export type SupportCaseRow = {
   incident_timestamp: string | null;
   issue_first_observed: string | null;
   affected_customer_count: number | null;
+  source_system: string | null;
+  external_ticket_id: string | null;
+  external_url: string | null;
   status: CaseStatus;
   created_at: string;
   updated_at: string;
@@ -163,10 +167,26 @@ export function supportCaseToInsert(
       ? input.issueFirstObserved.trim()
       : null,
     affected_customer_count: input.affectedCustomerCount ?? null,
+    source_system: input.sourceSystem ?? null,
+    external_ticket_id: input.externalTicketId?.trim()
+      ? input.externalTicketId.trim()
+      : null,
+    external_url: input.externalUrl?.trim() ? input.externalUrl.trim() : null,
     status,
     created_at: createdAt,
     updated_at: updatedAt,
   };
+}
+
+function asSourceSystem(value: string | null | undefined): CaseSourceSystem | null {
+  if (
+    value === "manual" ||
+    value === "freshdesk" ||
+    value === "demo_freshdesk"
+  ) {
+    return value;
+  }
+  return null;
 }
 
 export function supportCaseFromRow(row: SupportCaseRow): SupportCase {
@@ -187,6 +207,9 @@ export function supportCaseFromRow(row: SupportCaseRow): SupportCase {
     incidentTimestamp: toIsoOrNull(row.incident_timestamp),
     issueFirstObserved: textOrEmpty(row.issue_first_observed) || null,
     affectedCustomerCount: row.affected_customer_count,
+    sourceSystem: asSourceSystem(row.source_system),
+    externalTicketId: row.external_ticket_id,
+    externalUrl: row.external_url,
     status: row.status,
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),

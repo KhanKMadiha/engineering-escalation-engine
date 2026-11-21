@@ -100,6 +100,27 @@ export class SupabaseCaseRepository implements CaseRepository {
     return supportCaseFromRow(row);
   }
 
+  async findByExternalTicket(
+    sourceSystem: string,
+    externalTicketId: string,
+  ): Promise<SupportCase | null> {
+    const { data, error } = await this.client
+      .from("support_cases")
+      .select("*")
+      .eq("source_system", sourceSystem)
+      .eq("external_ticket_id", externalTicketId)
+      .maybeSingle();
+
+    if (error) {
+      this.logFailure("findByExternalTicket", externalTicketId, error);
+      throw mapSupabaseError(error, "findByExternalTicket");
+    }
+    if (!data) {
+      return null;
+    }
+    return supportCaseFromRow(data as Parameters<typeof supportCaseFromRow>[0]);
+  }
+
   async getCaseById(id: string): Promise<CaseRecord | null> {
     return this.getCaseWithDetails(id);
   }

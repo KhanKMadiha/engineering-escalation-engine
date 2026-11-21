@@ -3,6 +3,7 @@ import type {
   CaseAnalysisResult,
   EvidenceIdentifiedItem,
 } from "@/lib/analysis/analysis-schema";
+import type { TechnicalEvidenceRecord } from "@/lib/evidence/evidence-types";
 
 export type Severity = "critical" | "high" | "medium" | "low";
 
@@ -39,7 +40,15 @@ export type CaseEventType =
   | "human_decision_recorded"
   | "engineering_handoff_created"
   | "decision_recorded"
-  | "status_changed";
+  | "status_changed"
+  | "ticket_imported"
+  | "technical_evidence_added"
+  | "technical_evidence_updated"
+  | "technical_evidence_deleted"
+  | "technical_evidence_attachment_added"
+  | "technical_evidence_attachment_deleted";
+
+export type CaseSourceSystem = "manual" | "freshdesk" | "demo_freshdesk";
 
 export type SupportCase = {
   id: string;
@@ -69,6 +78,12 @@ export type SupportCase = {
    */
   issueFirstObserved: string | null;
   affectedCustomerCount: number | null;
+  /** Intake provenance — null/manual for classic form creates. */
+  sourceSystem?: CaseSourceSystem | null;
+  /** External ticket id when imported; null for manual cases. */
+  externalTicketId?: string | null;
+  /** Optional deep link to the source ticket. */
+  externalUrl?: string | null;
   status: CaseStatus;
   createdAt: string;
   updatedAt: string;
@@ -95,6 +110,9 @@ export type CreateCaseInput = {
   /** Optional approximate timeframe text. Not parsed into a timestamp. */
   issueFirstObserved?: string | null;
   affectedCustomerCount?: number | null;
+  sourceSystem?: CaseSourceSystem | null;
+  externalTicketId?: string | null;
+  externalUrl?: string | null;
 };
 
 export type SupportCaseSummary = {
@@ -212,4 +230,9 @@ export type CaseRecord = SupportCase & {
   handoff?: EscalationHandoff;
   decision?: HumanDecision;
   events: CaseEvent[];
+  /**
+   * Phase B structured technical evidence (optional).
+   * Loaded separately from AI analysis; survives reassessment.
+   */
+  technicalEvidence?: TechnicalEvidenceRecord[];
 };

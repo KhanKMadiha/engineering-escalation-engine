@@ -1,4 +1,5 @@
 import type { CaseAnalysisResult } from "@/lib/analysis/analysis-schema";
+import { ADDITIONAL_DEMO_CASE_DEFINITIONS } from "@/lib/demo/demo-cases-additional";
 import type { CreateCaseInput, HumanDecisionType } from "@/types";
 
 /**
@@ -43,7 +44,14 @@ export function stripDemoMarkersForDisplay(value: string): string {
 export type DemoCaseKey =
   | "clear_escalation"
   | "continue_investigation"
-  | "insufficient_evidence";
+  | "insufficient_evidence"
+  | "search_indexing"
+  | "slack_notifications"
+  | "scim_provisioning"
+  | "api_rate_limit"
+  | "saml_subset_users"
+  | "email_delivery"
+  | "http_504_latency";
 
 /**
  * Optional post-analysis human decision applied through DecisionService during seed.
@@ -88,18 +96,22 @@ export type DemoCaseDefinition = {
 };
 
 /**
- * Three fictional Support Ops scenarios at different lifecycle stages.
+ * Fictional Support Ops scenarios across Jan–Nov 2026.
  * Outcomes use existing deterministic rules and DecisionService — no domain bypass.
  *
- * A — Northstar Financial / API v3 → escalate → human approve → escalated (8 Sep 2026)
+ * Original three (preserved dates):
+ * A — Northstar Financial / API v3 → escalate → approve → escalated (8 Sep 2026)
  * B — Meridian Systems / SSO → insufficient_evidence → awaiting_decision (11 Sep 2026)
- * C — Apex Digital / MS Teams → continue_investigation → human reject →
+ * C — Apex Digital / MS Teams → continue_investigation → reject →
  *     investigation_continues (12 Sep 2026)
+ *
+ * Additional seven cover Slack, API 429, search indexing, SAML subset,
+ * HTTP 504, SCIM, and email delivery — varied months and workflow states.
  *
  * Note: there is no `investigating` CaseStatus. `investigation_continues` is the
  * closest valid state after a human records that escalation should not proceed yet.
  */
-export const DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
+const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
   {
     key: "clear_escalation",
     label: "API platform escalation",
@@ -382,6 +394,11 @@ export const DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
     },
   },
 ] as const;
+
+export const DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
+  ...ORIGINAL_DEMO_CASE_DEFINITIONS,
+  ...ADDITIONAL_DEMO_CASE_DEFINITIONS,
+];
 
 /**
  * Prior fictional customer labels used in older demo seeds.

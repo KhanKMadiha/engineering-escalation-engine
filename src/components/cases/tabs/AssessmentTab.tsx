@@ -5,6 +5,7 @@ import {
   recommendationLabel,
   recommendationTone,
 } from "@/components/cases/EscalationAssessmentCard";
+import { Card, CardHeader } from "@/components/ui/Card";
 import {
   buildCurrentCaseCalculation,
   buildScoringModelGroups,
@@ -21,24 +22,24 @@ type AssessmentTabProps = {
 };
 
 /**
- * Escalation Assessment — why this case is recommended for escalation.
- * Presentation only. Human decision remains on Overview.
+ * Escalation Assessment — recommendation + score as visual focal point.
+ * Presentation only. Human decision remains on Overview. Scoring logic unchanged.
  */
 export function AssessmentTab({ record }: AssessmentTabProps) {
   const { analysis, escalationResult } = record;
 
   return (
     <CaseDetailTwoColumnLayout
-      mainClassName="space-y-10"
+      mainClassName="space-y-5"
       main={
         <>
           {!escalationResult ? (
-            <p className="text-sm text-slate-600">
+            <p className="text-[15px] text-muted">
               Escalation has not been evaluated yet.
             </p>
           ) : (
             <>
-              <RecommendationBlock result={escalationResult} />
+              <RecommendationHero result={escalationResult} />
               <SignalsConsidered result={escalationResult} />
               <TechnicalAssessment
                 result={escalationResult}
@@ -50,7 +51,7 @@ export function AssessmentTab({ record }: AssessmentTabProps) {
         </>
       }
       sidebar={
-        <div className="space-y-8">
+        <div className="space-y-6">
           <DecisionAuthorityPanel />
           <AiAnalysisSection analysis={analysis} />
         </div>
@@ -61,59 +62,83 @@ export function AssessmentTab({ record }: AssessmentTabProps) {
 
 function DecisionAuthorityPanel() {
   return (
-    <aside>
-      <h2 className="text-xs font-medium uppercase tracking-wide text-slate-500">
+    <Card padding="md">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
         Decision authority
       </h2>
-      <ol className="mt-3 space-y-2 text-sm">
+      <ol className="mt-4 space-y-3 text-[15px]">
         <li>
-          <p className="font-medium text-slate-900">AI analysis</p>
-          <p className="text-xs text-slate-500">Advisory</p>
+          <p className="font-semibold text-foreground">AI analysis</p>
+          <p className="text-sm text-muted">Advisory</p>
         </li>
         <li className="text-slate-300" aria-hidden>
           ↓
         </li>
         <li>
-          <p className="font-medium text-slate-900">Rules-based assessment</p>
-          <p className="text-xs text-slate-500">Recommends</p>
+          <p className="font-semibold text-foreground">Rules-based assessment</p>
+          <p className="text-sm text-muted">Recommends</p>
         </li>
         <li className="text-slate-300" aria-hidden>
           ↓
         </li>
         <li>
-          <p className="font-medium text-slate-900">Human reviewer</p>
-          <p className="text-xs text-slate-500">Final decision</p>
+          <p className="font-semibold text-foreground">Human reviewer</p>
+          <p className="text-sm text-muted">Final decision</p>
         </li>
       </ol>
-      <p className="mt-4 text-xs leading-relaxed text-slate-500">
+      <p className="mt-4 text-sm leading-relaxed text-muted">
         AI cannot approve an escalation.
       </p>
-    </aside>
+    </Card>
   );
 }
 
-function RecommendationBlock({
+function RecommendationHero({
   result,
 }: {
   result: NonNullable<CaseRecord["escalationResult"]>;
 }) {
+  const pct = Math.min(100, Math.max(0, result.escalationScore));
+
   return (
-    <section>
-      <h2 className="text-base font-semibold text-slate-900">
-        Escalation recommendation
-      </h2>
-      <div
-        className={`mt-3 inline-flex rounded border px-3 py-2 text-sm font-semibold tracking-wide ${recommendationTone(result.recommendation)}`}
-      >
-        {result.recommendation === "escalate" ? "✓ " : null}
-        {recommendationLabel(result.recommendation)}
+    <Card padding="lg" className="overflow-hidden border-accent/20">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          <h2 className="text-base font-semibold text-foreground">
+            Escalation recommendation
+          </h2>
+          <div
+            className={`inline-flex rounded-lg border px-5 py-3 text-lg font-semibold tracking-wide ${recommendationTone(result.recommendation)}`}
+          >
+            {result.recommendation === "escalate" ? "✓ " : null}
+            {recommendationLabel(result.recommendation)}
+          </div>
+          <p className="max-w-2xl text-[15px] text-muted">
+            The recommendation is calculated from predefined rules and validated
+            case signals. AI does not calculate the final score, and a human makes
+            the final escalation decision.
+          </p>
+          <p className="text-sm font-medium text-slate-600">
+            Rules-based assessment · Human approval required
+          </p>
+        </div>
+        <div className="flex w-full shrink-0 flex-col justify-center rounded-xl border border-border bg-slate-50 px-6 py-5 lg:w-64">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Escalation readiness score
+          </p>
+          <p className="mt-2 font-mono text-5xl font-semibold tabular-nums leading-none text-foreground">
+            {result.escalationScore}
+            <span className="text-xl font-medium text-muted"> / 100</span>
+          </p>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-accent"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
       </div>
-      <p className="mt-2 text-sm text-slate-600">
-        The recommendation is calculated from predefined rules and validated
-        case signals. AI does not calculate the final score, and a human makes
-        the final escalation decision.
-      </p>
-    </section>
+    </Card>
   );
 }
 
@@ -125,31 +150,43 @@ function SignalsConsidered({
   const factors = qualifyingFactors(result.contributingFactors);
 
   return (
-    <section>
-      <h2 className="text-base font-semibold text-slate-900">
-        Signals considered
-      </h2>
-      <ul className="mt-3 grid gap-x-10 gap-y-1.5 sm:grid-cols-2">
+    <Card padding="lg">
+      <CardHeader
+        title="Signals considered"
+        description="Contributing factors from the deterministic escalation engine"
+      />
+      <ul className="grid gap-3 sm:grid-cols-2">
         {factors.map((factor) => (
           <li
             key={`${factor.signal}-${factor.reason}`}
-            className="flex gap-2 text-sm text-slate-800"
+            className="flex items-start justify-between gap-3 rounded-lg border border-border bg-slate-50/80 px-4 py-3 text-[15px] text-slate-800"
           >
-            <span
-              className={
-                factor.direction === "decreases"
-                  ? "text-slate-400"
-                  : "text-emerald-600"
-              }
-              aria-hidden
-            >
-              {factor.direction === "decreases" ? "–" : "✓"}
+            <span className="flex min-w-0 gap-2">
+              <span
+                className={
+                  factor.direction === "decreases"
+                    ? "text-slate-400"
+                    : "text-emerald-600"
+                }
+                aria-hidden
+              >
+                {factor.direction === "decreases" ? "–" : "✓"}
+              </span>
+              <span>{formatSignalLabel(factor.signal)}</span>
             </span>
-            <span>{formatSignalLabel(factor.signal)}</span>
+            <span
+              className={`shrink-0 font-mono text-sm font-semibold ${
+                factor.direction === "decreases"
+                  ? "text-red-700"
+                  : "text-emerald-700"
+              }`}
+            >
+              {formatWeight(factor.weight)}
+            </span>
           </li>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }
 
@@ -163,20 +200,20 @@ function TechnicalAssessment({
   aiAssessedSeverity?: string;
 }) {
   return (
-    <section className="border-t border-slate-200 pt-8">
-      <h2 className="text-base font-semibold text-slate-900">
+    <Card padding="lg">
+      <h2 className="text-base font-semibold text-foreground">
         Technical assessment
       </h2>
-      <dl className="mt-3 grid grid-cols-2 gap-3 sm:max-w-md text-sm">
+      <dl className="mt-4 grid grid-cols-2 gap-4 sm:max-w-md text-[15px]">
         <div>
-          <dt className="text-xs text-slate-500">Score</dt>
-          <dd className="mt-0.5 font-mono text-base font-semibold text-slate-900">
+          <dt className="text-sm text-muted">Score</dt>
+          <dd className="mt-1 font-mono text-lg font-semibold text-foreground">
             {result.escalationScore} / 100
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Escalation threshold</dt>
-          <dd className="mt-0.5 font-mono text-base font-semibold text-slate-900">
+          <dt className="text-sm text-muted">Escalation threshold</dt>
+          <dd className="mt-1 font-mono text-lg font-semibold text-foreground">
             {escalateThreshold()} / 100
           </dd>
         </div>
@@ -193,7 +230,7 @@ function TechnicalAssessment({
           />
         </Disclosure>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -204,7 +241,7 @@ function ScoreScale({ score }: { score: number }) {
 
   return (
     <div className="mt-5 max-w-xl" aria-hidden="true">
-      <div className="relative h-2 rounded bg-slate-100">
+      <div className="relative h-2.5 rounded bg-slate-100">
         <div
           className="absolute inset-y-0 left-0 rounded bg-slate-300/80"
           style={{ width: `${continueAt}%` }}
@@ -221,24 +258,24 @@ function ScoreScale({ score }: { score: number }) {
           style={{ left: `${escalateAt}%` }}
         />
         <span
-          className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-slate-900"
+          className="absolute top-1/2 h-3.5 w-0.5 -translate-y-1/2 bg-slate-900"
           style={{ left: `calc(${pct}% - 1px)` }}
           title={`Current score ${score}`}
         />
       </div>
-      <div className="mt-1.5 flex justify-between font-mono text-[10px] text-slate-500">
+      <div className="mt-1.5 flex justify-between font-mono text-[11px] text-muted">
         <span>0</span>
         <span>{continueAt}</span>
         <span>{escalateAt}</span>
         <span>100</span>
       </div>
-      <div className="mt-0.5 flex justify-between text-[10px] text-slate-500">
+      <div className="mt-0.5 flex justify-between text-[11px] text-muted">
         <span>Insufficient</span>
         <span className="pl-6">Continue</span>
         <span className="pr-2">Escalate</span>
         <span />
       </div>
-      <p className="mt-2 text-xs text-slate-600">
+      <p className="mt-2 text-sm text-muted">
         Current score: <span className="font-mono font-medium">{score}</span>
       </p>
     </div>
@@ -262,7 +299,7 @@ function ScoringExplanation({
   const bands = thresholdBands();
 
   return (
-    <div className="mt-3 space-y-6 text-sm text-slate-800">
+    <div className="mt-3 space-y-6 text-[15px] text-slate-800">
       <p className="leading-relaxed text-slate-700">
         Each case starts at 0. Points are added or subtracted when the case
         meets predefined escalation rules. Signals with greater impact on
@@ -275,27 +312,27 @@ function ScoringExplanation({
 
       {groups.map((group) => (
         <div key={group.title}>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
             {group.title}
           </h3>
           {group.description ? (
-            <p className="mt-1 text-xs text-slate-500">{group.description}</p>
+            <p className="mt-1 text-sm text-muted">{group.description}</p>
           ) : null}
           <ul className="mt-2 space-y-1">
             {group.rows.map((row) => (
               <li
                 key={`${group.title}-${row.label}`}
-                className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-50 py-1 last:border-0"
+                className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-50 py-1.5 last:border-0"
               >
                 <span>
                   {row.label}
                   {row.isCurrent ? (
-                    <span className="ml-2 text-xs font-medium text-slate-900">
+                    <span className="ml-2 text-sm font-medium text-foreground">
                       ← This case
                     </span>
                   ) : null}
                 </span>
-                <span className="font-mono text-xs text-slate-600">
+                <span className="font-mono text-sm text-muted">
                   {formatWeight(row.weight)}
                 </span>
               </li>
@@ -305,7 +342,7 @@ function ScoringExplanation({
       ))}
 
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
           Current case
         </h3>
         <ul className="mt-2 space-y-2">
@@ -313,24 +350,24 @@ function ScoringExplanation({
             <li key={`${line.label}-${line.weight}-${line.explanation ?? ""}`}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span>{line.label}</span>
-                <span className="font-mono text-xs text-slate-700">
+                <span className="font-mono text-sm text-slate-700">
                   {formatWeight(line.weight)}
                 </span>
               </div>
               {line.explanation ? (
-                <p className="mt-0.5 text-xs text-slate-500">{line.explanation}</p>
+                <p className="mt-0.5 text-sm text-muted">{line.explanation}</p>
               ) : null}
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 font-medium">
+        <div className="mt-3 flex justify-between border-t border-border pt-2 font-medium">
           <span>Total</span>
           <span className="font-mono">
             {calculation.displayedScore} / 100
           </span>
         </div>
         {calculation.wasClamped ? (
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             Raw factor total was {calculation.rawTotal}; the engine clamps scores
             to the configured 0–100 range before recommending.
           </p>
@@ -338,16 +375,16 @@ function ScoringExplanation({
       </div>
 
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
           Thresholds
         </h3>
         <ul className="mt-2 space-y-3">
           {bands.map((band) => (
             <li key={band.label}>
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-foreground">
                 {band.range} → {band.label}
               </p>
-              <p className="text-xs text-slate-500">{band.description}</p>
+              <p className="text-sm text-muted">{band.description}</p>
             </li>
           ))}
         </ul>
@@ -362,61 +399,61 @@ function AiAnalysisSection({
   analysis: CaseRecord["analysis"];
 }) {
   return (
-    <section className="border-t border-slate-200 pt-6">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-slate-500">
+    <Card padding="md">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
         AI analysis
       </h2>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-sm text-muted">
         Advisory only — does not determine the escalation score or authorise
         escalation.
       </p>
 
       {!analysis ? (
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-[15px] text-muted">
           No AI analysis has been run for this case yet.
         </p>
       ) : (
         <div className="mt-4 space-y-4">
-          <dl className="grid gap-3 text-sm">
+          <dl className="grid gap-3 text-[15px]">
             <div>
-              <dt className="text-xs text-slate-500">Assessed severity</dt>
+              <dt className="text-sm text-muted">Assessed severity</dt>
               <dd className="mt-1">
                 <SeverityBadge severity={analysis.aiResult.assessedSeverity} />
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Issue category</dt>
-              <dd className="mt-1 capitalize text-slate-900">
+              <dt className="text-sm text-muted">Issue category</dt>
+              <dd className="mt-1 capitalize text-foreground">
                 {analysis.aiResult.issueCategory}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Reproducibility</dt>
-              <dd className="mt-1 capitalize text-slate-900">
+              <dt className="text-sm text-muted">Reproducibility</dt>
+              <dd className="mt-1 capitalize text-foreground">
                 {analysis.aiResult.reproducibility.replaceAll("_", " ")}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Suspected product defect</dt>
-              <dd className="mt-1 text-slate-900">
+              <dt className="text-sm text-muted">Suspected product defect</dt>
+              <dd className="mt-1 text-foreground">
                 {analysis.aiResult.suspectedProductDefect ? "Yes" : "No"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Likely root cause</dt>
-              <dd className="mt-1 text-slate-900">
+              <dt className="text-sm text-muted">Likely root cause</dt>
+              <dd className="mt-1 text-foreground">
                 {analysis.aiResult.suspectedRootCause ?? "Not established"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Validated evidence</dt>
-              <dd className="mt-1 text-slate-900">
+              <dt className="text-sm text-muted">Validated evidence</dt>
+              <dd className="mt-1 text-foreground">
                 {analysis.validatedEvidence.length}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Missing evidence</dt>
-              <dd className="mt-1 text-slate-900">
+              <dt className="text-sm text-muted">Missing evidence</dt>
+              <dd className="mt-1 text-foreground">
                 {analysis.aiResult.missingEvidence.length}
               </dd>
             </div>
@@ -424,27 +461,27 @@ function AiAnalysisSection({
 
           <div className="space-y-2">
             <Disclosure summary="View AI reasoning" variant="link">
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+              <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800">
                 {analysis.aiResult.reasoning}
               </p>
             </Disclosure>
             <Disclosure summary="View validated evidence" variant="link">
               {analysis.validatedEvidence.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-600">None retained.</p>
+                <p className="mt-2 text-[15px] text-muted">None retained.</p>
               ) : (
                 <ul className="mt-2 space-y-2">
                   {analysis.validatedEvidence.map((item, index) => (
                     <li
                       key={`${item.sourceField}-${index}`}
-                      className="border-l-2 border-slate-200 pl-3"
+                      className="border-l-2 border-border pl-3"
                     >
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-[15px] font-medium text-foreground">
                         {item.description}
                       </p>
-                      <p className="mt-0.5 font-mono text-[10px] text-slate-500">
+                      <p className="mt-0.5 font-mono text-[11px] text-muted">
                         {item.sourceField}
                       </p>
-                      <blockquote className="mt-1 font-mono text-[11px] whitespace-pre-wrap text-slate-700">
+                      <blockquote className="mt-1 font-mono text-xs whitespace-pre-wrap text-slate-700">
                         {item.quotedExcerpt}
                       </blockquote>
                     </li>
@@ -455,6 +492,6 @@ function AiAnalysisSection({
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# Local capture / mockup scratch (not shipped)
+.tmp-screenshots/
+.tmp-mockups/
+engineering-escalation-engine@0.1.0seed:demo
+
 # debug
 npm-debug.log*
 yarn-debug.log*

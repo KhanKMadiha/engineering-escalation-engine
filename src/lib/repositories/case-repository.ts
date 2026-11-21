@@ -33,6 +33,14 @@ export type PersistDecisionOutcomeInput = {
 export interface CaseRepository {
   createCase(input: CreateCaseInput): Promise<SupportCase>;
   getCaseById(id: string): Promise<CaseRecord | null>;
+  /**
+   * Lookup for ticket-import idempotency.
+   * Returns null when no matching imported case exists.
+   */
+  findByExternalTicket(
+    sourceSystem: string,
+    externalTicketId: string,
+  ): Promise<SupportCase | null>;
   listCases(filters?: CaseListFilters): Promise<SupportCaseSummary[]>;
   updateCaseStatus(id: string, status: CaseStatus): Promise<void>;
   saveAnalysis(caseId: string, analysis: StoredAnalysis): Promise<void>;
