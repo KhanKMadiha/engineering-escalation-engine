@@ -318,6 +318,9 @@ describe("assessment-summary", () => {
     expect(insufficient.showNavigation).toBe(false);
     expect(insufficient.summary).toContain("Request");
     expect(insufficient.summary).toContain("authentication evidence");
+    expect(insufficient.summary).toContain(
+      "does not automatically update this assessment",
+    );
 
     const decision: HumanDecision = {
       id: "d1",

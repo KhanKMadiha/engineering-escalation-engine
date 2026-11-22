@@ -436,6 +436,8 @@ export function supportCaseSummaryFromParts(
     updatedAt: supportCase.updatedAt,
     escalationRecommendation: escalation?.recommendation,
     escalationScore: escalation?.escalation_score,
+    demoWorkspaceId: caseRow.demo_workspace_id ?? null,
+    clonedFromCaseId: caseRow.cloned_from_case_id ?? null,
   };
 }
 

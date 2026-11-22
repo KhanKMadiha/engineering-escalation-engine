@@ -50,8 +50,8 @@ type RecommendationFilter = "all" | EscalationRecommendation;
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All statuses" },
-  { value: "awaiting_decision", label: "Awaiting decision" },
-  { value: "escalated", label: "Escalated" },
+  { value: "awaiting_decision", label: "Awaiting approval" },
+  { value: "escalated", label: "Approval recorded" },
   { value: "investigation_continues", label: "Investigation continues" },
   { value: "analyzing", label: "Analyzing" },
   { value: "submitted", label: "Submitted" },
@@ -245,7 +245,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
           icon={ClipboardCheck}
         />
         <StatCard
-          label="Ready for handoff"
+          label="Approval recorded"
           value={stats.readyForHandoff}
           icon={Send}
         />

@@ -12,7 +12,7 @@ describe("Cases dashboard demo notice", () => {
       "All cases shown are fictional and contain no real customer data.",
     );
     expect(html).toContain("Awaiting review");
-    expect(html).toContain("Ready for handoff");
+    expect(html).toContain("Approval recorded");
     expect(html).toContain("In progress");
     expect(html).toContain("New case");
     expect(html).not.toMatch(/bg-amber|bg-yellow|Demo environment[\s\S]*banner/i);

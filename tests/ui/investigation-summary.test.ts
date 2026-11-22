@@ -331,7 +331,7 @@ describe("investigation presentation helpers", () => {
       investigationProgressLabel("investigation_continues", "insufficient_evidence"),
     ).toBe("In progress");
     expect(investigationProgressLabel("awaiting_decision", "escalate")).toBe(
-      "Awaiting decision",
+      "Awaiting approval",
     );
   });
 });

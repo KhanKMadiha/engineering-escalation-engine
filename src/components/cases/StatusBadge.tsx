@@ -1,6 +1,10 @@
-import { displayLifecycleStatus } from "@/lib/ui/case-lifecycle-presentation";
+import {
+  displayLifecycleStatus,
+  formatLifecycleStatusLabel,
+} from "@/lib/ui/case-lifecycle-presentation";
 import type {
   CaseStatus,
+  DemoDownstreamDestination,
   Environment,
   EscalationRecommendation,
   Severity,
@@ -35,18 +39,28 @@ type StatusBadgeProps = {
   status: CaseStatus;
   /** When set, legacy awaiting_decision + non-escalate rows display as investigation continues. */
   recommendation?: EscalationRecommendation | null;
+  /** Optional simulated destination records for clearer post-approval labels. */
+  downstreamDestinations?: ReadonlyArray<DemoDownstreamDestination> | null;
 };
 
-export function StatusBadge({ status, recommendation }: StatusBadgeProps) {
-  const display = displayLifecycleStatus({
+export function StatusBadge({
+  status,
+  recommendation,
+  downstreamDestinations,
+}: StatusBadgeProps) {
+  const labelInput = {
     status,
     escalationRecommendation: recommendation,
-  });
+    downstreamDestinations,
+  };
+  const label = formatLifecycleStatusLabel(labelInput);
+  const styleKey = displayLifecycleStatus(labelInput);
+
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[display]}`}
+      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[styleKey]}`}
     >
-      {display.replaceAll("_", " ")}
+      {label}
     </span>
   );
 }

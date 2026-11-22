@@ -115,6 +115,10 @@ export function TechnicalEvidenceSidebar({
           {showForm ? "Cancel" : "Add evidence"}
         </Button>
       </div>
+      <p className="text-xs leading-relaxed text-muted">
+        New evidence is saved on this case. It does not automatically update the
+        Assessment recommendation.
+      </p>
 
       {showForm ? (
         <AddEvidenceForm

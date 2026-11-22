@@ -7,6 +7,7 @@ import { HumanDecisionResultPanel } from "@/components/cases/HumanDecisionResult
 import { EscalationReadinessScore } from "@/components/cases/EscalationReadinessScore";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { isSharedFictionalDemoCase } from "@/lib/demo/demo-workspace";
 import { buildDraftEscalationRationale } from "@/lib/ui/escalation-approval-summary";
 import type { WorkflowStage } from "@/lib/ui/case-workflow-stages";
 import type { CaseRecord } from "@/types";
@@ -73,11 +74,12 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
           {approved && !decision ? (
             <Card padding="lg">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                Escalation approved
+                Approved for handoff
               </h2>
               <p className="mt-2 text-[15px] text-muted">
-                This case is escalated. Open Create escalation to review the
-                prepared package and destination records.
+                This case is approved for handoff. Open Create escalation to
+                review the prepared package and create simulated destination
+                records.
               </p>
               <Button
                 type="button"
@@ -148,6 +150,13 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
                 </div>
                 <EscalationReadinessScore score={result.escalationScore} />
               </div>
+
+              {isSharedFictionalDemoCase(record) ? (
+                <p className="text-sm text-muted">
+                  Your decision is saved to a private copy of this case. The
+                  shared example stays available for other visitors.
+                </p>
+              ) : null}
 
               <HumanDecisionPanel
                 caseId={record.id}

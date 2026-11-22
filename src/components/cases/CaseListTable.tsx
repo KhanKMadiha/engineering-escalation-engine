@@ -8,6 +8,7 @@ import {
   formatCaseKey,
   formatRecommendationLabel,
 } from "@/lib/ui/case-display";
+import { demoCaseOwnershipLabel } from "@/lib/ui/demo-case-labels";
 import type { SupportCaseSummary } from "@/types";
 
 type CaseListTableProps = {
@@ -108,6 +109,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
               const customerLabel = stripDemoMarkerPrefix(item.customer);
               const issueLabel = stripDemoMarkerPrefix(item.issueTitle);
               const caseKey = formatCaseKey(item.id);
+              const ownership = demoCaseOwnershipLabel(item);
 
               return (
                 <tr key={item.id} className="hover:bg-subtle/70">
@@ -119,6 +121,11 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                     >
                       {caseKey}
                     </Link>
+                    {ownership ? (
+                      <p className="mt-1 text-[11px] font-medium text-muted">
+                        {ownership}
+                      </p>
+                    ) : null}
                   </td>
                   <td className={cellClass}>
                     <Link
@@ -167,6 +174,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
           const issueLabel = stripDemoMarkerPrefix(item.issueTitle);
           const updated = formatDateTimeParts(item.updatedAt)?.date;
           const caseKey = formatCaseKey(item.id);
+          const ownership = demoCaseOwnershipLabel(item);
 
           return (
             <li key={item.id}>
@@ -178,6 +186,11 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                   <span className="font-mono text-xs font-medium text-muted">
                     {caseKey}
                   </span>
+                  {ownership ? (
+                    <span className="text-[11px] font-medium text-muted">
+                      {ownership}
+                    </span>
+                  ) : null}
                   <SeverityBadge severity={item.severity} />
                   <StatusBadge
                     status={item.status}
