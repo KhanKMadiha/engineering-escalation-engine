@@ -1,5 +1,6 @@
 import type {
   CaseStatus,
+  DemoDownstreamDestination,
   EscalationRecommendation,
   SupportCaseSummary,
 } from "@/types";
@@ -50,4 +51,49 @@ export function displayLifecycleStatus(input: {
     return "investigation_continues";
   }
   return input.status;
+}
+
+export type LifecycleStatusLabelInput = {
+  status: CaseStatus;
+  escalationRecommendation?: EscalationRecommendation | null;
+  /**
+   * Simulated destination records already saved for this case (when known).
+   * Presentation only — does not claim a live external ticket exists.
+   */
+  downstreamDestinations?: ReadonlyArray<DemoDownstreamDestination> | null;
+};
+
+/**
+ * Human-readable lifecycle label for badges and queue rows.
+ * Keeps stored CaseStatus unchanged; clarifies approval vs destination records.
+ */
+export function formatLifecycleStatusLabel(
+  input: LifecycleStatusLabelInput,
+): string {
+  const display = displayLifecycleStatus(input);
+
+  if (display === "awaiting_decision") {
+    return "Awaiting approval";
+  }
+
+  if (display === "escalated") {
+    if (input.downstreamDestinations == null) {
+      return "Approval recorded";
+    }
+    const destinations = new Set(input.downstreamDestinations);
+    const hasJira = destinations.has("jira");
+    const hasRootly = destinations.has("rootly");
+    if (hasJira && hasRootly) {
+      return "Jira and Rootly created";
+    }
+    if (hasJira) {
+      return "Jira issue created";
+    }
+    if (hasRootly) {
+      return "Rootly incident created";
+    }
+    return "Approved for handoff";
+  }
+
+  return display.replaceAll("_", " ");
 }

@@ -43,10 +43,17 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       workspaceId,
     });
 
+  const downstreamDestinations = existingDownstreamRecords.map(
+    (row) => row.destination,
+  );
+
   return (
     <div className="space-y-1">
       <div className="pb-4">
-        <CaseIssueHeader record={record} />
+        <CaseIssueHeader
+          record={record}
+          downstreamDestinations={downstreamDestinations}
+        />
       </div>
       <CaseWorkspace
         record={{ ...record, technicalEvidence }}

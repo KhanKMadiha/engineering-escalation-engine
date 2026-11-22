@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   DecisionAlreadyRecordedError,
   DecisionNotEligibleError,
@@ -31,7 +30,7 @@ export type SubmitHumanDecisionActionState = {
   errorCode?: string;
   fieldErrors?: DecisionFieldErrors;
   rationale?: string;
-  /** Private fork id when CoW redirected away from a template. */
+  /** Case id where the decision was recorded, including private copies. */
   caseId?: string;
 };
 
@@ -87,7 +86,6 @@ export async function submitHumanDecision(
     // Organisational/local non-template cases decide in place.
     let writableCaseId = validation.data.caseId;
     let isSimulated = false;
-    let redirectedFromTemplate = false;
 
     if (isSharedFictionalDemoCase(existing) || isDemoForkCase(existing)) {
       const session = await ensureDemoWorkspaceForWrite(repository);
@@ -97,7 +95,6 @@ export async function submitHumanDecision(
         repository,
       );
       writableCaseId = resolved.record.id;
-      redirectedFromTemplate = resolved.redirectedFromTemplate;
       isSimulated = true;
     }
 
@@ -114,10 +111,6 @@ export async function submitHumanDecision(
     revalidatePath("/");
     revalidatePath("/pending-reviews");
 
-    if (redirectedFromTemplate && writableCaseId !== caseId) {
-      redirect(`/cases/${writableCaseId}`);
-    }
-
     return {
       ok: true,
       caseId: writableCaseId,
@@ -127,17 +120,6 @@ export async function submitHumanDecision(
           : "Continue investigation recorded. Engineering handoff was not created.",
     };
   } catch (error) {
-    // next/navigation redirect throws; rethrow so Next can handle it.
-    if (
-      error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      typeof (error as { digest?: unknown }).digest === "string" &&
-      String((error as { digest: string }).digest).startsWith("NEXT_REDIRECT")
-    ) {
-      throw error;
-    }
-
     if (error instanceof CaseNotFoundError) {
       return {
         ok: false,

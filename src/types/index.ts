@@ -129,6 +129,10 @@ export type SupportCaseSummary = {
   updatedAt: string;
   escalationRecommendation?: EscalationRecommendation;
   escalationScore?: number;
+  /** Present on visitor forks; null/undefined for shared templates. */
+  demoWorkspaceId?: string | null;
+  /** Template case id when this summary is a visitor fork. */
+  clonedFromCaseId?: string | null;
 };
 
 export type CaseListFilters = {

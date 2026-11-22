@@ -24,9 +24,9 @@ export default async function PendingReviewsPage() {
     <FilteredCaseQueue
       cases={cases}
       title="Pending reviews"
-      description="Cases awaiting Escalation approval before an Engineering handoff can be created. Engine recommendations are advisory until a human decision is recorded."
+      description="Cases awaiting Escalation approval. When you record a decision on an example, the app saves it to your private copy. The shared example stays available for other visitors. Engine recommendations are advisory until a human decision is recorded."
       emptyTitle="No cases awaiting review"
-      emptyDescription="When analysis recommends Engineering escalation, the case will appear here for human approval."
+      emptyDescription="When analysis recommends Engineering escalation, the case will appear here for approval."
     />
   );
 }

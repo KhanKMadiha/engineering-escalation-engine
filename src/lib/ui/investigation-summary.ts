@@ -632,9 +632,9 @@ export function investigationProgressLabel(
     case "investigation_continues":
       return "In progress";
     case "awaiting_decision":
-      return "Awaiting decision";
+      return "Awaiting approval";
     case "escalated":
-      return "Escalated";
+      return "Approval recorded";
     default:
       return null;
   }

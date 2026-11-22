@@ -341,12 +341,13 @@ export function buildAssessmentNextAction(
     const authGap =
       primaryGap &&
       /saml|auth|assertion|certificate|login/i.test(primaryGap);
+    const collect = authGap
+      ? "Request the missing authentication evidence from the customer or collect it internally."
+      : primaryGap
+        ? `Request the missing evidence from the customer or collect it internally (${primaryGap}).`
+        : "Request the missing evidence from the customer or collect it internally.";
     return {
-      summary: authGap
-        ? "Request the missing authentication evidence from the customer or collect it internally."
-        : primaryGap
-          ? `Request the missing evidence from the customer or collect it internally (${primaryGap}).`
-          : "Request the missing evidence from the customer or collect it internally.",
+      summary: `${collect} Adding evidence records it on the case; it does not automatically update this assessment.`,
       actionLabel: "Open Investigation",
       targetStage: "Investigation",
       tone: "continue",

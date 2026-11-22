@@ -48,6 +48,8 @@ function toSummary(record: CaseRecord): SupportCaseSummary {
     updatedAt: record.updatedAt,
     escalationRecommendation: record.escalationResult?.recommendation,
     escalationScore: record.escalationResult?.escalationScore,
+    demoWorkspaceId: record.demoWorkspaceId ?? null,
+    clonedFromCaseId: record.clonedFromCaseId ?? null,
   };
 }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CaseDetailsCard } from "@/components/cases/CaseDetailsCard";
 import { caseDetailTwoColumnGridClassName } from "@/components/cases/CaseDetailTwoColumnLayout";
@@ -35,6 +35,8 @@ import type {
   HumanDecision,
   StoredAnalysis,
 } from "@/types";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const analysis: StoredAnalysis = {
   id: "an-1",

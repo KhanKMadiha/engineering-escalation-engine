@@ -124,6 +124,12 @@ export function DownstreamDemoActions({
     );
   }
 
+  function openSavedRecord(record: DemoDownstreamRecord) {
+    setDestination(null);
+    setSuccessRecord(record);
+    onPreviewChange?.(false);
+  }
+
   const actions = (
     <div className="space-y-3">
       {(existingJira || existingRootly) && (
@@ -132,32 +138,18 @@ export function DownstreamDemoActions({
           <ul className="mt-1 space-y-1 text-muted">
             {existingJira ? (
               <li>
-                Jira · {existingJira.externalReference}{" "}
-                <button
-                  type="button"
-                  className="text-accent underline-offset-2 hover:underline"
-                  onClick={() => {
-                    setSuccessRecord(existingJira);
-                    onPreviewChange?.(false);
-                  }}
-                >
-                  View
-                </button>
+                Jira ·{" "}
+                <span className="font-mono text-[13px]">
+                  {existingJira.externalReference}
+                </span>
               </li>
             ) : null}
             {existingRootly ? (
               <li>
-                Rootly · {existingRootly.externalReference}{" "}
-                <button
-                  type="button"
-                  className="text-accent underline-offset-2 hover:underline"
-                  onClick={() => {
-                    setSuccessRecord(existingRootly);
-                    onPreviewChange?.(false);
-                  }}
-                >
-                  View
-                </button>
+                Rootly ·{" "}
+                <span className="font-mono text-[13px]">
+                  {existingRootly.externalReference}
+                </span>
               </li>
             ) : null}
           </ul>
@@ -169,7 +161,11 @@ export function DownstreamDemoActions({
           variant="primary"
           size="lg"
           className="w-full"
-          onClick={() => selectDestination("jira")}
+          onClick={() =>
+            existingJira
+              ? openSavedRecord(existingJira)
+              : selectDestination("jira")
+          }
         >
           {existingJira ? "View Jira issue" : "Create Jira issue"}
         </Button>
@@ -178,7 +174,11 @@ export function DownstreamDemoActions({
           variant="secondary"
           size="lg"
           className="w-full"
-          onClick={() => selectDestination("rootly")}
+          onClick={() =>
+            existingRootly
+              ? openSavedRecord(existingRootly)
+              : selectDestination("rootly")
+          }
         >
           {existingRootly ? "View Rootly incident" : "Create Rootly incident"}
         </Button>
