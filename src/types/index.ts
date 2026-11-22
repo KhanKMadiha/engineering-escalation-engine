@@ -40,6 +40,8 @@ export type CaseEventType =
   | "human_decision_recorded"
   | "engineering_handoff_created"
   | "decision_recorded"
+  | "demo_rationale_corrected"
+  | "demo_wording_corrected"
   | "status_changed"
   | "ticket_imported"
   | "technical_evidence_added"
@@ -132,6 +134,15 @@ export type SupportCaseSummary = {
 export type CaseListFilters = {
   status?: CaseStatus;
   severity?: Severity;
+  /**
+   * When set, include private forks owned by this workspace.
+   * Other visitors' forks are never returned.
+   */
+  demoWorkspaceId?: string | null;
+  /**
+   * Include shared templates (`demo_workspace_id IS NULL`). Default true.
+   */
+  includeSharedTemplates?: boolean;
 };
 
 export type CaseEvent = {
@@ -145,6 +156,7 @@ export type CaseEvent = {
 /**
  * Stored AI analysis for a support case.
  * Evidence in aiResult.evidenceIdentified is validated only.
+ * assessmentVersion / isCurrent support reassessment history (Increment 2+).
  */
 export type StoredAnalysis = {
   id: string;
@@ -161,6 +173,10 @@ export type StoredAnalysis = {
   model: string;
   promptVersion: string;
   createdAt: string;
+  /** Monotonic per case; first assessment is 1. Defaults to 1 when omitted. */
+  assessmentVersion?: number;
+  /** Exactly one analysis per case should be current. Defaults to true when omitted. */
+  isCurrent?: boolean;
 };
 
 export type EscalationEngineResult = {
@@ -174,6 +190,9 @@ export type EscalationEngineResult = {
   }>;
   recommendationReasons: string[];
   source: "deterministic_engine";
+  /** Set when persisted; pairs with StoredAnalysis.assessmentVersion. */
+  assessmentVersion?: number;
+  isCurrent?: boolean;
 };
 
 export type EscalationHandoffEvidenceItem = {
@@ -210,6 +229,10 @@ export type EscalationHandoff = {
   decisionRationale: string;
   createdAt: string;
   source: "engineering_handoff";
+  /** Set when handoff was created from a simulated demo approval. */
+  isSimulated?: boolean;
+  /** Decision that authorized this handoff, when known. */
+  decisionId?: string | null;
 };
 
 export type HumanDecision = {
@@ -222,13 +245,72 @@ export type HumanDecision = {
   escalationScoreAtDecision: number;
   recommendationAtDecision: EscalationRecommendation;
   source: "human_decision";
+  /** Assessment version this decision was recorded against. Defaults to 1. */
+  assessmentVersion?: number;
+  /** True when approving despite a non-escalate engine recommendation. */
+  isException?: boolean;
+  /** Required when isException is true (presentation + persistence). */
+  exceptionReason?: string | null;
+  /**
+   * Portfolio visitor simulated decision (Approach D).
+   * false/omitted = organisational or seed decision on a template/local run.
+   */
+  isSimulated?: boolean;
+};
+
+/**
+ * Anonymous demo workspace (Approach D). Not a user account.
+ * Cookie may store `id` only — never show in UI.
+ */
+export type DemoWorkspace = {
+  id: string;
+  createdAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
+};
+
+export type DemoDownstreamDestination = "jira" | "rootly";
+
+/**
+ * Persistent simulated Jira / Rootly record (Phase 2B).
+ * Scoped to an anonymous workspace — never an external ticket.
+ */
+export type DemoDownstreamRecord = {
+  id: string;
+  demoWorkspaceId: string;
+  caseId: string;
+  destination: DemoDownstreamDestination;
+  /** Deterministic demo reference (ENG-DEMO-* / INC-DEMO-*). */
+  externalReference: string;
+  /** Server-built preview/result payload for refresh display. */
+  payload: Record<string, unknown>;
+  handoffId: string | null;
+  createdAt: string;
 };
 
 export type CaseRecord = SupportCase & {
   analysis?: StoredAnalysis;
   escalationResult?: EscalationEngineResult;
   handoff?: EscalationHandoff;
+  /** Latest human decision (convenience); full history in `decisions`. */
   decision?: HumanDecision;
+  /** All recorded human decisions, oldest → newest. */
+  decisions?: HumanDecision[];
+  /** Prior analyses when reassessment has run (excludes current). */
+  analysisHistory?: StoredAnalysis[];
+  /** Prior escalation results when reassessment has run (excludes current). */
+  escalationHistory?: EscalationEngineResult[];
+  /** Current assessment version pointer (1-based). */
+  currentAssessmentVersion?: number | null;
+  /** Fingerprint of inputs used for the current assessment (reassessment guard). */
+  assessmentInputFingerprint?: string | null;
+  /**
+   * NULL = shared fictional template (immutable to visitors).
+   * Set = copy-on-write fork owned by an anonymous demo workspace.
+   */
+  demoWorkspaceId?: string | null;
+  /** Template case id when this record is a visitor fork. */
+  clonedFromCaseId?: string | null;
   events: CaseEvent[];
   /**
    * Phase B structured technical evidence (optional).

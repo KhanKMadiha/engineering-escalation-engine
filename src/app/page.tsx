@@ -1,9 +1,9 @@
 import { CaseQueueClient } from "@/components/cases/CaseQueueClient";
-import { getCaseService } from "@/lib/cases/get-case-service";
+import { listVisibleCases } from "@/lib/demo/list-visible-cases";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const cases = await getCaseService().listCases();
+  const cases = await listVisibleCases();
   return <CaseQueueClient cases={cases} />;
 }

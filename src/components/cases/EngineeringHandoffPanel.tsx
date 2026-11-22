@@ -103,7 +103,7 @@ export function EngineeringHandoffPanel({
               Score {handoff.escalationScore} / 100 ·{" "}
               {handoff.escalationRecommendation.replaceAll("_", " ")}
             </Section>
-            <Section title="Human Decision">Approved</Section>
+            <Section title="Escalation approval">Approved</Section>
             <Section title="Decision Rationale">
               <p className="whitespace-pre-wrap">{handoff.decisionRationale}</p>
             </Section>

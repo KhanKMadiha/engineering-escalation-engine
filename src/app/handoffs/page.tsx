@@ -1,14 +1,15 @@
 import { FilteredCaseQueue } from "@/components/cases/FilteredCaseQueue";
-import { getCaseService } from "@/lib/cases/get-case-service";
+import { listVisibleCases } from "@/lib/demo/list-visible-cases";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Operations view: cases with Engineering handoffs available (status = escalated).
  * Escalation still requires prior human approval — this status is set only after approve.
+ * Scoped to shared templates + the visitor's private workspace forks.
  */
 export default async function HandoffsPage() {
-  const cases = await getCaseService().listCases({ status: "escalated" });
+  const cases = await listVisibleCases({ status: "escalated" });
 
   return (
     <FilteredCaseQueue

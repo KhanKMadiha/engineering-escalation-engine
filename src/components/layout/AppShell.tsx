@@ -216,7 +216,7 @@ export function AppShell({
   return (
     <div className="flex min-h-full">
       <aside className="sticky top-0 z-20 hidden h-screen w-[15.5rem] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
-        <div className="flex shrink-0 items-center gap-3 border-b border-sidebar-border px-5 py-5">
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <BrandMark />
         </div>
         <SidebarNav pathname={pathname} sections={sections} />
@@ -231,7 +231,7 @@ export function AppShell({
             onClick={() => setMobileNavOpen(false)}
           />
           <aside className="relative flex h-full w-[15.5rem] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-sidebar-border px-5 py-5">
+            <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border px-5">
               <div className="flex min-w-0 items-center gap-3">
                 <BrandMark />
               </div>
@@ -276,21 +276,19 @@ export function AppShell({
                 <span>{breadcrumbLabel(pathname)}</span>
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <p
                 className="flex items-center gap-2 text-sm text-muted"
-                title="This workspace contains fictional cases and demonstration data."
+                title="Fictional cases. No real customer data."
               >
-                <span
-                  className="inline-flex rounded-md border border-border bg-subtle px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground"
-                  aria-hidden
-                >
+                <span className="inline-flex rounded-md border border-border bg-subtle px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground">
                   Demo
                 </span>
-                <span className="hidden sm:inline">Demo workspace</span>
-                <span className="sr-only">
-                  This workspace contains fictional cases and demonstration
-                  data.
+                <span className="hidden sm:inline">
+                  Fictional cases. No real customer data.
+                </span>
+                <span className="sr-only sm:hidden">
+                  Fictional cases. No real customer data.
                 </span>
               </p>
               <span

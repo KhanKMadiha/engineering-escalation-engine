@@ -26,13 +26,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Helix Analytics`,
       product: "Enterprise Search",
       severity: "critical",
-      issueTitle: `${DEMO} Enterprise search fails to index newly published articles`,
-      issueDescription: [
-        "Newly published articles are not appearing in enterprise search for several hours.",
-        "Customer impact is critical for knowledge-worker workflows.",
-        "Indexer worker logs show repeated failures with request ID: req-demo-search-1182.",
-        "Timestamp: 2026-01-22T09:18:44Z",
-      ].join("\n"),
+      issueTitle: `${DEMO} New articles not appearing in Enterprise Search`,
+      issueDescription:
+        "New articles stay missing from Enterprise Search for hours after publish. Indexer logs show failures (req-demo-search-1182).",
       environment: "production",
       stepsToReproduce: [
         "1. Publish a new article in the knowledge base.",
@@ -137,13 +133,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Cascade Retail`,
       product: "Slack Integration",
       severity: "high",
-      issueTitle: `${DEMO} Slack integration fails to deliver channel notifications`,
-      issueDescription: [
-        "Outbound Slack notifications stop delivering to configured public channels.",
-        "Webhook responses return HTTP status: 500 with Error: slack_delivery_failed.",
-        "Request ID: req-demo-slack-7741",
-        "Timestamp: 2026-03-18T08:42:11Z",
-      ].join("\n"),
+      issueTitle: `${DEMO} Slack channel notifications not delivering`,
+      issueDescription:
+        "Slack notifications are not reaching configured channels. Delivery logs show HTTP 500 slack_delivery_failed (req-demo-slack-7741).",
       environment: "production",
       stepsToReproduce: [
         "1. Trigger an alert that should notify a configured Slack channel.",
@@ -236,18 +228,15 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
     key: "scim_provisioning",
     label: "SCIM provisioning incomplete",
     expectedRecommendation: "insufficient_evidence",
-    expectedStatus: "awaiting_decision",
+    expectedStatus: "investigation_continues",
     reportedAt: "2026-04-09T16:25:00.000Z",
     createInput: {
       customer: `${DEMO} Summit Workforce`,
       product: "SCIM Directory Sync",
       severity: "medium",
-      issueTitle: `${DEMO} SCIM user provisioning fails for a subset of new hires`,
-      issueDescription: [
-        "Some newly created IdP users are not provisioned into the product via SCIM.",
-        "Customer suspects a mapping or filter issue but has not provided complete SCIM request/response pairs.",
-        "Investigation has started; evidence remains incomplete.",
-      ].join("\n"),
+      issueTitle: `${DEMO} SCIM not provisioning some new users`,
+      issueDescription:
+        "Some new IdP users never appear in the product directory after SCIM sync. Complete SCIM request/response pairs not yet available.",
       environment: "production",
       stepsToReproduce: [
         "1. Create a new user in the customer IdP.",
@@ -328,12 +317,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Blue Harbor Logistics`,
       product: "API v3",
       severity: "high",
-      issueTitle: `${DEMO} API clients receive intermittent HTTP 429 rate-limit responses`,
-      issueDescription: [
-        "Enterprise API clients intermittently receive HTTP 429 responses during peak ingestion windows.",
-        "Customer believes quotas may be incorrect, but retry/backoff behaviour has not been fully validated.",
-        "Investigation is ongoing.",
-      ].join("\n"),
+      issueTitle: `${DEMO} Intermittent HTTP 429 errors from API v3`,
+      issueDescription:
+        "API clients intermittently receive HTTP 429 in prod. Need to confirm quota headers and client retry/backoff before escalating.",
       environment: "production",
       stepsToReproduce: [
         "1. Authenticate with a valid enterprise API credential.",
@@ -345,7 +331,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       expectedBehaviour:
         "Authenticated clients within the contracted quota should receive HTTP 200 responses rather than intermittent 429s.",
       actualBehaviour:
-        "Clients intermittently receive HTTP 429 rate-limit responses during peak windows.",
+        "Clients intermittently receive HTTP 429 rate-limit responses in prod.",
       troubleshootingPerformed: [
         "Confirmed authentication succeeds between failures.",
         "Collected sample 429 responses including rate-limit headers.",
@@ -361,7 +347,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       ].join("\n"),
       requestIds: "req-demo-429-3301",
       incidentTimestamp: "2026-05-14T07:55:02.000Z",
-      issueFirstObserved: "First noticed during 12 May 2026 peak window",
+      issueFirstObserved: "First noticed on 12 May 2026",
       affectedCustomerCount: 1,
     },
     analysisPayload: {
@@ -422,13 +408,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Orchid Health`,
       product: "SSO",
       severity: "high",
-      issueTitle: `${DEMO} SAML authentication fails for a subset of enterprise users`,
-      issueDescription: [
-        "A subset of enterprise users cannot complete SAML SSO login while peers succeed.",
-        "Captured SAMLResponse validation errors include Signature validation failed.",
-        "Request ID: req-demo-saml-5520",
-        "Timestamp: 2026-06-25T09:05:33Z",
-      ].join("\n"),
+      issueTitle: `${DEMO} SAML SSO failing for some users`,
+      issueDescription:
+        "Some users fail SAML SSO while peers on the same IdP succeed. Captured error: Signature validation failed (req-demo-saml-5520).",
       environment: "production",
       stepsToReproduce: [
         "1. Attempt SSO login with an affected user account.",
@@ -533,12 +515,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Brightline Insurance`,
       product: "Email Notifications",
       severity: "high",
-      issueTitle: `${DEMO} Email notifications fail to deliver for password-reset messages`,
-      issueDescription: [
-        "Password-reset and security alert emails intermittently fail to deliver.",
-        "Some messages show deferred SMTP responses; complete provider bounce packages are still incomplete.",
-        "Investigation is ongoing.",
-      ].join("\n"),
+      issueTitle: `${DEMO} Password-reset emails intermittently not delivering`,
+      issueDescription:
+        "Password-reset and security emails are intermittently not being delivered. Some SMTP deferrals have been identified, but we're still waiting for complete bounce logs.",
       environment: "production",
       stepsToReproduce: [
         "1. Trigger a password-reset email for a test mailbox.",
@@ -627,17 +606,13 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO} Vertex Media`,
       product: "API Gateway",
       severity: "high",
-      issueTitle: `${DEMO} Intermittent HTTP 504 gateway timeouts under peak load`,
-      issueDescription: [
-        "API Gateway intermittently returns HTTP 504 during peak traffic windows.",
-        "Upstream latency spikes correlate with failed requests.",
-        "Request ID: req-demo-504-6618",
-        "Timestamp: 2026-11-05T07:22:51Z",
-      ].join("\n"),
+      issueTitle: `${DEMO} Intermittent HTTP 504 Gateway Timeout Errors`,
+      issueDescription:
+        "API requests intermittently return HTTP 504 errors in prod.",
       environment: "production",
       stepsToReproduce: [
         "1. Authenticate with a valid API credential.",
-        "2. Issue repeated GET requests during a peak traffic window.",
+        "2. Issue repeated GET requests.",
         "3. Observe intermittent HTTP 504 responses.",
         "4. Capture latency timings for failed versus successful requests.",
         "5. Confirm the pattern reproduces across multiple endpoints.",
@@ -645,9 +620,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       expectedBehaviour:
         "Authenticated API requests should complete within SLA and return HTTP 200 rather than intermittent 504 timeouts.",
       actualBehaviour:
-        "Requests intermittently return HTTP 504 with elevated upstream latency during peak load.",
+        "Requests intermittently return HTTP 504 with elevated upstream latency.",
       troubleshootingPerformed: [
-        "Reproduced the issue in production during a peak window.",
+        "Reproduced the issue in production.",
         "Collected gateway timeout logs with request IDs.",
         "Compared p95 latency for successful and failing requests.",
         "Verified client timeouts exceed the gateway timeout threshold.",
@@ -662,7 +637,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       ].join("\n"),
       requestIds: "req-demo-504-6618",
       incidentTimestamp: "2026-11-05T07:22:51.000Z",
-      issueFirstObserved: "Week of 27 Oct 2026 during evening peaks",
+      issueFirstObserved: "Week of 27 Oct 2026",
       affectedCustomerCount: 5,
     },
     analysisPayload: {
@@ -671,7 +646,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       reproducibility: "confirmed",
       suspectedProductDefect: true,
       reasoning:
-        "High-severity production gateway timeouts with validated request IDs and latency evidence. Support reproduced intermittent 504s under peak load. Human approval still required.",
+        "High-severity production gateway timeouts with validated request IDs and latency evidence. Support reproduced intermittent 504s. Human approval still required.",
       evidenceIdentified: [
         {
           description: "HTTP 504 in logs",
@@ -709,9 +684,14 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
           quotedExcerpt: "intermittent HTTP 504 responses",
         },
         {
-          description: "Description notes latency spikes",
+          description: "Elevated upstream latency",
+          sourceField: "actualBehaviour",
+          quotedExcerpt: "elevated upstream latency",
+        },
+        {
+          description: "Prod 504 symptoms in description",
           sourceField: "issueDescription",
-          quotedExcerpt: "Upstream latency spikes",
+          quotedExcerpt: "HTTP 504 errors in prod",
         },
       ],
       missingEvidence: [],
@@ -719,7 +699,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
         "Have a human reviewer approve or reject escalation based on the engine score.",
       ],
       suspectedRootCause:
-        "Upstream latency exceeding gateway timeout under peak load (inference; not proven).",
+        "Upstream latency exceeding gateway timeout (inference; not proven).",
       aiEscalationAssessment: "likely_escalate",
     },
   },

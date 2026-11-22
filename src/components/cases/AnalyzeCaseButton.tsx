@@ -52,8 +52,9 @@ export function AnalyzeCaseButton({
   if (hasAnalysis && hasEscalationResult) {
     return (
       <p className="text-xs text-slate-600">
-        Analysis complete. Completed results are not replaced. Use the human
-        decision panel to approve or reject the Escalation Engine recommendation.
+        Analysis complete. Completed results are not replaced. Use Escalation
+        approval to record a human decision on the Escalation Engine
+        recommendation.
       </p>
     );
   }

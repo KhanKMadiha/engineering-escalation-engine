@@ -7,8 +7,8 @@ describe("Cases dashboard demo notice", () => {
     const html = renderToStaticMarkup(<CaseQueueClient cases={[]} />);
 
     expect(html).toContain("Case queue");
-    expect(html).toContain("Demo environment");
-    expect(html).toContain(
+    expect(html).not.toContain("Demo environment");
+    expect(html).not.toContain(
       "All cases shown are fictional and contain no real customer data.",
     );
     expect(html).toContain("Awaiting review");
@@ -18,3 +18,4 @@ describe("Cases dashboard demo notice", () => {
     expect(html).not.toMatch(/bg-amber|bg-yellow|Demo environment[\s\S]*banner/i);
   });
 });
+

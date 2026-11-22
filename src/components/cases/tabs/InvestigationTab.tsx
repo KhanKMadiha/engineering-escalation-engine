@@ -7,12 +7,12 @@ import {
   buildInvestigationNextSteps,
   buildInvestigationOverview,
   buildTroubleshootingPerformed,
-  establishedRootCause,
   establishedWorkaround,
   investigationProgressLabel,
   reproductionResultDisplay,
   splitReproductionSteps,
   type ImpactTimelineProvenance,
+  workaroundDisplayLabel,
 } from "@/lib/ui/investigation-summary";
 import type { CaseRecord } from "@/types";
 import type { ReactNode } from "react";
@@ -80,8 +80,8 @@ function impactProvenanceHint(
 export function InvestigationTab({ record }: InvestigationTabProps) {
   const overview = buildInvestigationOverview(record);
   const impact = buildImpactTimeline(record);
-  const rootCause = establishedRootCause(record);
   const workaround = establishedWorkaround(record);
+  const workaroundLabel = workaroundDisplayLabel(workaround);
   const troubleshootingPerformed = buildTroubleshootingPerformed(
     record.troubleshootingPerformed,
   );
@@ -90,7 +90,10 @@ export function InvestigationTab({ record }: InvestigationTabProps) {
   const reproductionResult = reproductionResultDisplay(
     record.stepsToReproduce,
   );
-  const progress = investigationProgressLabel(record.status);
+  const progress = investigationProgressLabel(
+    record.status,
+    record.escalationResult?.recommendation,
+  );
 
   return (
     <CaseDetailTwoColumnLayout
@@ -156,18 +159,12 @@ export function InvestigationTab({ record }: InvestigationTabProps) {
             <div className="grid gap-3 lg:grid-cols-2">
               <div className="min-w-0 rounded-md border border-border bg-slate-50/50 p-3">
                 <FieldLabel>Expected behaviour</FieldLabel>
-                <p className="mt-1 text-xs font-normal text-muted">
-                  Customer / support-provided
-                </p>
                 <p className="mt-2 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
                   {record.expectedBehaviour.trim() || "Not provided."}
                 </p>
               </div>
               <div className="min-w-0 rounded-md border border-border bg-slate-50/50 p-3">
                 <FieldLabel>Actual behaviour</FieldLabel>
-                <p className="mt-1 text-xs font-normal text-muted">
-                  Customer-reported
-                </p>
                 <p className="mt-2 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
                   {record.actualBehaviour.trim() || "Not provided."}
                 </p>
@@ -189,9 +186,6 @@ export function InvestigationTab({ record }: InvestigationTabProps) {
               <p className="mt-3 text-[14px] font-normal leading-snug text-foreground">
                 <span className="font-bold">Reproduction result: </span>
                 {reproductionResult.label}
-                <span className="mt-1 block text-xs font-normal text-muted">
-                  Customer / support
-                </span>
               </p>
             ) : null}
           </SectionCard>
@@ -204,26 +198,15 @@ export function InvestigationTab({ record }: InvestigationTabProps) {
             )}
           </SectionCard>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            <SectionCard title="Root cause">
-              <p
-                className={`font-normal ${
-                  rootCause ? "text-foreground" : "text-muted"
-                }`}
-              >
-                {rootCause ?? "Not yet identified"}
-              </p>
-            </SectionCard>
-            <SectionCard title="Workaround">
-              <p
-                className={`font-normal ${
-                  workaround ? "text-foreground" : "text-muted"
-                }`}
-              >
-                {workaround ?? "Not confirmed"}
-              </p>
-            </SectionCard>
-          </div>
+          <SectionCard title="Workaround">
+            <p
+              className={`font-normal ${
+                workaroundLabel.recorded ? "text-foreground" : "text-muted"
+              }`}
+            >
+              {workaroundLabel.label}
+            </p>
+          </SectionCard>
 
           <SectionCard title="Next steps">
             {nextSteps.length > 0 ? (

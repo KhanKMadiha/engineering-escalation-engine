@@ -21,18 +21,27 @@ function summary(
 }
 
 describe("buildCaseQueueStats", () => {
-  it("counts only real statuses from the case list", () => {
+  it("counts ordinary escalate approvals only for pending review", () => {
     const stats = buildCaseQueueStats([
-      summary({ status: "awaiting_decision" }),
-      summary({ status: "awaiting_decision" }),
-      summary({ status: "escalated" }),
-      summary({ status: "investigation_continues" }),
+      summary({
+        status: "awaiting_decision",
+        escalationRecommendation: "escalate",
+      }),
+      summary({
+        status: "awaiting_decision",
+        escalationRecommendation: "insufficient_evidence",
+      }),
+      summary({ status: "escalated", escalationRecommendation: "escalate" }),
+      summary({
+        status: "investigation_continues",
+        escalationRecommendation: "continue_investigation",
+      }),
       summary({ status: "analyzing" }),
     ]);
     expect(stats).toEqual({
-      awaitingReview: 2,
+      awaitingReview: 1,
       readyForHandoff: 1,
-      inProgress: 2,
+      inProgress: 3,
       total: 5,
     });
   });

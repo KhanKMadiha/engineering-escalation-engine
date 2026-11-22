@@ -33,12 +33,9 @@ describe("AppShell", () => {
     expect(html).toContain('href="/how-it-works"');
     expect(html).toContain('aria-label="Primary"');
     expect(html).toContain("page-content");
-    expect(html).toContain("Demo workspace");
-    expect(html).toContain(
-      "This workspace contains fictional cases and demonstration data.",
-    );
     expect(html).toContain("Demo");
-    expect(html).not.toContain("Fictional cases. No real customer data.");
+    expect(html).toContain("Fictional cases. No real customer data.");
+    expect(html).not.toContain("Demo workspace");
     expect(html).not.toContain(
       'aria-label="Demo workspace. Fictional cases. No real customer data."',
     );

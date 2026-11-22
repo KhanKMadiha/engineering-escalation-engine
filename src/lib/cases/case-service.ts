@@ -54,6 +54,8 @@ export class CaseService {
   async listCasesPage(options?: {
     status?: CaseListFilters["status"];
     severity?: CaseListFilters["severity"];
+    demoWorkspaceId?: CaseListFilters["demoWorkspaceId"];
+    includeSharedTemplates?: CaseListFilters["includeSharedTemplates"];
     page?: number;
     pageSize?: number;
   }): Promise<{
@@ -67,6 +69,8 @@ export class CaseService {
     const items = await this.repository.listCases({
       status: options?.status,
       severity: options?.severity,
+      demoWorkspaceId: options?.demoWorkspaceId,
+      includeSharedTemplates: options?.includeSharedTemplates,
     });
     const total = items.length;
     const start = (page - 1) * pageSize;

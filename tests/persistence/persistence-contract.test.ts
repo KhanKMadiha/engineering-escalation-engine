@@ -3,7 +3,6 @@ import { createCaseEvent } from "@/lib/audit/case-events";
 import { DecisionService } from "@/lib/cases/decision-service";
 import type { CaseRepository } from "@/lib/repositories/case-repository";
 import { InMemoryCaseRepository } from "@/lib/repositories/in-memory-case-repository";
-import { DuplicateDecisionError } from "@/lib/repositories/persistence-errors";
 import type {
   CreateCaseInput,
   EscalationEngineResult,
@@ -179,7 +178,7 @@ describe("Phase 7 persistence contract (InMemory)", () => {
     ).toBe(true);
   });
 
-  it("15–18. invalid refs / duplicate decisions / domain invariants", async () => {
+  it("15–18. invalid refs / multiple decisions / domain invariants", async () => {
     await expect(
       repo.saveAnalysis("00000000-0000-4000-8000-000000000000", analysis),
     ).rejects.toThrow(/not found/i);
@@ -195,11 +194,18 @@ describe("Phase 7 persistence contract (InMemory)", () => {
       escalationScoreAtDecision: 78,
       recommendationAtDecision: "escalate" as const,
       source: "human_decision" as const,
+      assessmentVersion: 1,
     };
     await repo.saveHumanDecision(created.id, decision);
-    await expect(repo.saveHumanDecision(created.id, decision)).rejects.toBeInstanceOf(
-      DuplicateDecisionError,
-    );
+    await repo.saveHumanDecision(created.id, {
+      ...decision,
+      id: crypto.randomUUID(),
+      decision: "rejected" as const,
+      rationale: "Continue investigation after further review of evidence.",
+    });
+    const loaded = await repo.getCaseById(created.id);
+    expect(loaded?.decisions).toHaveLength(2);
+    expect(loaded?.decision?.decision).toBe("rejected");
 
     await expect(
       repo.appendEvent(created.id, {
@@ -291,15 +297,21 @@ describe("Phase 7 persistence contract (InMemory)", () => {
       ],
     });
 
+    // After continue-investigation, ordinary (non-exception) decisions are not eligible.
     await expect(
       repo.persistDecisionOutcome({
         caseId: created.id,
-        decision: { ...decision, id: crypto.randomUUID() },
+        decision: {
+          ...decision,
+          id: crypto.randomUUID(),
+          assessmentVersion: 1,
+        },
         handoff: null,
         targetStatus: "investigation_continues",
         events: [],
+        expectedAssessmentVersion: 1,
       }),
-    ).rejects.toBeInstanceOf(DuplicateDecisionError);
+    ).rejects.toThrow(/not eligible/i);
 
     const loaded = await repo.getHumanDecision(created.id);
     expect(loaded?.id).toBe(decision.id);

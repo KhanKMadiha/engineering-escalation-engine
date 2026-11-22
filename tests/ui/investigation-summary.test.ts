@@ -9,6 +9,8 @@ import {
   establishedRootCause,
   establishedWorkaround,
   impactScopeFromCustomerCount,
+  investigationProgressLabel,
+  investigationReproducibilityRow,
   parseReproductionSteps,
   reproductionResultDisplay,
   reproductionStatusDisplay,
@@ -85,6 +87,43 @@ const teamsCase: CaseRecord = {
 };
 
 describe("investigation presentation helpers", () => {
+  it("maps Meridian-style incomplete reproduction to Not attempted", () => {
+    const row = investigationReproducibilityRow({
+      ...teamsCase,
+      troubleshootingPerformed: [
+        "Confirmed the customer recently rotated the IdP signing certificate.",
+        "Requested SAML response / assertion for a failing login.",
+      ].join("\n"),
+      stepsToReproduce: [
+        "1. Attempt SSO login with an affected user account.",
+        "2. Support has not yet captured a complete SAML failure package.",
+      ].join("\n"),
+      analysis: {
+        ...analysis,
+        aiResult: { ...analysis.aiResult, reproducibility: "not_reproduced" },
+      },
+    });
+    expect(row).toEqual({
+      label: "Reproducibility",
+      value: "Not attempted",
+      provenance: "customer_support",
+    });
+  });
+
+  it("maps Support-documented reproduction to Reproduced", () => {
+    const row = investigationReproducibilityRow({
+      ...teamsCase,
+      troubleshootingPerformed:
+        "Reproduced the issue in production during a peak window.",
+      analysis: {
+        ...analysis,
+        aiResult: { ...analysis.aiResult, reproducibility: "confirmed" },
+      },
+    });
+    expect(row.value).toBe("Reproduced");
+    expect(row.provenance).toBe("customer_support");
+  });
+
   it("builds a one-sentence overview without status, causes, or environment", () => {
     const overview = buildInvestigationOverview(teamsCase);
     expect(overview.affectedProduct).toBe("MS Teams Integration");
@@ -102,6 +141,7 @@ describe("investigation presentation helpers", () => {
       "Reported",
       "Issue started",
       "Frequency",
+      "Reproducibility",
       "Affected users",
       "Affected organisations",
     ]);
@@ -113,6 +153,9 @@ describe("investigation presentation helpers", () => {
     expect(byLabel["Issue started"]?.value).toContain("11 Sep 2026");
     expect(byLabel["Last known working"]).toBeUndefined();
     expect(byLabel.Reported?.provenance).toBe("system");
+    expect(byLabel.Reproducibility?.value).toBe(
+      "Intermittently reproducible",
+    );
     // Channel-condition notes + AI reproducibility are not frequency evidence.
     expect(byLabel.Frequency).toEqual({
       label: "Frequency",
@@ -278,5 +321,17 @@ describe("investigation presentation helpers", () => {
       value: "teams-public-ch-pending",
       isPlaceholder: true,
     });
+  });
+
+  it("shows In progress for legacy awaiting_decision + insufficient_evidence", () => {
+    expect(
+      investigationProgressLabel("awaiting_decision", "insufficient_evidence"),
+    ).toBe("In progress");
+    expect(
+      investigationProgressLabel("investigation_continues", "insufficient_evidence"),
+    ).toBe("In progress");
+    expect(investigationProgressLabel("awaiting_decision", "escalate")).toBe(
+      "Awaiting decision",
+    );
   });
 });

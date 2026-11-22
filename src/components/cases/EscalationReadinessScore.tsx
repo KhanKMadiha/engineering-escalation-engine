@@ -14,6 +14,8 @@ import { AppIcon } from "@/components/ui/AppIcon";
 
 type EscalationReadinessScoreProps = {
   score: number;
+  /** Assessment hero uses a larger score; Overview keeps the compact default. */
+  size?: "md" | "lg";
 };
 
 const READINESS_HELP =
@@ -25,6 +27,7 @@ const READINESS_HELP =
  */
 export function EscalationReadinessScore({
   score,
+  size = "md",
 }: EscalationReadinessScoreProps) {
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | undefined>();
@@ -127,9 +130,20 @@ export function EscalationReadinessScore({
         </button>
       </div>
 
-      <p className="mt-1.5 font-mono text-3xl font-semibold tabular-nums text-foreground">
+      <p
+        className={`mt-1.5 font-mono font-semibold tabular-nums text-foreground ${
+          size === "lg" ? "text-4xl sm:text-5xl" : "text-3xl"
+        }`}
+      >
         {score}
-        <span className="text-base font-medium text-muted"> / 100</span>
+        <span
+          className={`font-medium text-muted ${
+            size === "lg" ? "text-lg" : "text-base"
+          }`}
+        >
+          {" "}
+          / 100
+        </span>
       </p>
 
       {open ? (

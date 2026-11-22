@@ -1,4 +1,10 @@
-import type { CaseStatus, Environment, Severity } from "@/types";
+import { displayLifecycleStatus } from "@/lib/ui/case-lifecycle-presentation";
+import type {
+  CaseStatus,
+  Environment,
+  EscalationRecommendation,
+  Severity,
+} from "@/types";
 
 /** Cool grey neutrals; escalated uses soft danger for attention. */
 const STATUS_STYLES: Record<CaseStatus, string> = {
@@ -27,14 +33,20 @@ const ENVIRONMENT_STYLES: Record<Environment, string> = {
 
 type StatusBadgeProps = {
   status: CaseStatus;
+  /** When set, legacy awaiting_decision + non-escalate rows display as investigation continues. */
+  recommendation?: EscalationRecommendation | null;
 };
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, recommendation }: StatusBadgeProps) {
+  const display = displayLifecycleStatus({
+    status,
+    escalationRecommendation: recommendation,
+  });
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[status]}`}
+      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[display]}`}
     >
-      {status.replaceAll("_", " ")}
+      {display.replaceAll("_", " ")}
     </span>
   );
 }

@@ -8,9 +8,11 @@ const EVENT_LABELS: Record<CaseEventType, string> = {
   analysis_failed: "AI analysis failed",
   escalation_evaluated: "Escalation assessed",
   escalation_evaluation_failed: "Escalation evaluation failed",
-  human_decision_recorded: "Human decision recorded",
+  human_decision_recorded: "Escalation approval recorded",
   engineering_handoff_created: "Engineering handoff created",
   decision_recorded: "Decision recorded",
+  demo_rationale_corrected: "Demo rationale corrected",
+  demo_wording_corrected: "Demo wording corrected",
   status_changed: "Status changed",
   ticket_imported: "Support ticket imported",
   technical_evidence_added: "Technical evidence added",
@@ -33,7 +35,7 @@ export function auditEventDisplayLabel(event: CaseEvent): string {
   if (event.eventType === "status_changed") {
     const to = event.metadata?.to ?? event.metadata?.status;
     if (to === "awaiting_decision") {
-      return "Awaiting human decision";
+      return "Awaiting Escalation approval";
     }
   }
   return auditEventLabel(event.eventType);

@@ -249,16 +249,16 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain(">Intake<");
     expect(html).toContain("Investigation");
     expect(html).toContain("Assessment");
-    expect(html).toContain("Human decision");
-    expect(html).toContain("Handoff");
+    expect(html).toContain("Escalation approval");
+    expect(html).toContain("Create escalation");
     expect(html).not.toContain("Case summary");
     expect(html).not.toContain("Viewing");
     expect(html).not.toContain("does not change workflow state");
     expect(html).not.toContain(">01<");
     expect(html).not.toContain("Escalation Assessment");
     expect(html).not.toContain(">Overview<");
-    // Awaiting decision opens at Human decision (current relevant stage)
-    expect(html).toContain("Record decision");
+    // Awaiting decision opens at Escalation approval (current relevant stage)
+    expect(html).toContain("Escalation approval");
     expect(html).toContain("Case workflow section");
   });
 
@@ -282,7 +282,7 @@ describe("final case workspace presentation", () => {
       />,
     );
     expect(html).toContain("Investigation");
-    expect(html).toContain("Human decision");
+    expect(html).toContain("Escalation approval");
     expect(html).toContain("✓");
     expect(html).toContain('aria-current="step"');
     expect(html).not.toContain("Viewing");
@@ -290,51 +290,31 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain(">01<");
   });
 
-  it("places a simplified recommendation, next action and recent activity on Overview", () => {
+  it("shows Case details as a reported-issue overview without assessment or approval", () => {
     const html = renderToStaticMarkup(
       <OverviewTab record={record} goToTab={() => undefined} />,
     );
-    expect(html).toContain("Recent activity");
-    expect(html).toContain("View full timeline");
-    expect(html).toContain("Case reported");
-    expect(html).toContain("Escalation assessed");
-    expect(html).not.toContain("Collapse timeline");
-    expect(html).toContain("View full assessment");
-    expect(html).toContain("Escalation recommendation");
-    expect(html).toContain("Escalate");
-    expect(html).toContain("Escalation readiness");
-    expect(html).toContain("About escalation readiness score");
-    expect(html).not.toContain(
-      "Deterministic rules on validated evidence — not an AI confidence",
-    );
-    // Awaiting decision: decision form is visible — no redundant Next action card
+    expect(html).toContain("Reported issue");
+    expect(html).toContain("Issue description");
+    expect(html).toContain("Affected product");
+    expect(html).toContain("Environment");
+    expect(html).toContain("Severity");
+    expect(html).toContain("Frequency");
+    expect(html).toContain("Impact scope");
+    expect(html).toContain("Case details");
+    expect(html).not.toContain("Recent activity");
+    expect(html).not.toContain("View full assessment");
+    expect(html).not.toContain("Escalation recommendation");
+    expect(html).not.toContain("Escalation approval");
+    expect(html).not.toContain("Approve escalation");
+    expect(html).not.toContain("Investigation summary");
+    expect(html).not.toContain("Expected behaviour");
+    expect(html).not.toContain("Relevant findings");
     expect(html).not.toContain("Next action");
-    expect(html).not.toContain("Record human decision");
-    expect(html).not.toContain("Supporting reasoning");
-    expect(html).not.toContain("What we know");
-    expect(html).not.toContain("What is missing");
-    expect(html).toContain("Record decision");
-    expect(html).toContain("Escalation recommendation");
-    expect(html).toContain("Expected behaviour");
-    expect(html).toContain("Actual behaviour");
-    expect(html).toContain("Relevant findings");
-    expect(html).not.toContain("How is this calculated?");
-    expect(html).not.toContain("HTTP status: 500");
-    expect(html).not.toContain("req-1");
-    expect(html).not.toContain("Detailed AI reasoning");
-    expect(html).not.toContain("Established evidence");
-    expect(html).not.toContain("Missing evidence");
-    // Recommendation headline stays charcoal; no nested score mini-card
-    expect(html).not.toContain("text-warning");
-    expect(html).not.toContain("bg-subtle px-4 py-4");
-    // Case details is primary sidebar context; activity sits beneath it
-    expect(html.indexOf("Case details")).toBeLessThan(
-      html.indexOf("Recent activity"),
-    );
     expect(html).toContain(caseDetailTwoColumnGridClassName);
   });
 
-  it("renders handoff document Summary without repeating the issue title chrome", () => {
+  it("renders Create escalation prepared summary from approved handoff data", () => {
     const approved: CaseRecord = {
       ...record,
       status: "escalated",
@@ -352,20 +332,17 @@ describe("final case workspace presentation", () => {
       handoff,
     };
     const html = renderToStaticMarkup(<HandoffTab record={approved} />);
-    // Section titles are CSS-uppercased in the browser; markup still contains Summary.
-    expect(html).toContain("Summary");
-    expect(html).not.toContain(">Problem<");
-    expect(html).toContain("Handoff document");
-    expect(html).toContain("Engineering handoff");
-    // Presentation chrome no longer repeats the issue title above the document.
-    // Title remains in handoff data for copy/export (CopyHandoffButton), not as visible prose here.
-    // Prior automation counted page-header titles + CSS-uppercased "SUMMARY" misses — those were
-    // inaccurate assertions against correct behaviour.
-    expect(html).not.toContain("Intermittent 500 errors");
-    expect(html).toContain("Customers cannot retrieve articles.");
+    expect(html).toContain("Create escalation");
+    expect(html).toContain("Escalation approved");
+    expect(html).toContain("Prepared escalation");
+    expect(html).toContain("Intermittent 500 errors");
+    expect(html).toContain("Create Jira issue");
+    expect(html).not.toContain("Handoff document");
+    expect(html).not.toContain("Copy handoff");
+    expect(html).not.toContain("Steps to reproduce");
   });
 
-  it("shows next action directing approved reviewers to Handoff", () => {
+  it("keeps Case details free of approval next-actions after escalation", () => {
     const approved: CaseRecord = {
       ...record,
       status: "escalated",
@@ -385,11 +362,36 @@ describe("final case workspace presentation", () => {
     const html = renderToStaticMarkup(
       <OverviewTab record={approved} goToTab={() => undefined} />,
     );
+    expect(html).toContain("Reported issue");
+    expect(html).not.toContain("Next action");
+    expect(html).not.toContain("Open Engineering handoff");
+    expect(html).not.toContain("Approve escalation");
+  });
+
+  it("directs approved reviewers to Create escalation from Assessment", () => {
+    const approved: CaseRecord = {
+      ...record,
+      status: "escalated",
+      decision: {
+        id: "dec-1",
+        caseId: record.id,
+        decision: "approved",
+        rationale: "Enough evidence to escalate to engineering.",
+        decidedBy: "support_engineer",
+        decidedAt: "2026-09-10T19:10:00.000Z",
+        escalationScoreAtDecision: 98,
+        recommendationAtDecision: "escalate",
+        source: "human_decision",
+      },
+      handoff,
+    };
+    const html = renderToStaticMarkup(
+      <AssessmentTab record={approved} goToStage={() => undefined} />,
+    );
     expect(html).toContain("Next action");
-    expect(html).toContain("Open Engineering handoff");
-    expect(html).toContain("Open handoff");
-    expect(html).not.toContain("Current action");
-    expect(html).not.toContain("package");
+    expect(html).toContain("Open Create escalation");
+    expect(html).toContain("Escalation approved");
+    expect(html).not.toContain("Recommendation only");
     expect(html).not.toContain("Approve escalation");
   });
 
@@ -399,16 +401,16 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Case ID");
     expect(html).toContain("11111111");
     expect(html).toContain(formatCaseKey(record.id));
-    expect(html).toContain("Affected customer count");
     expect(html).toContain("Customer");
     expect(html).toContain("Acme Corp");
-    expect(html).toContain("Product");
-    expect(html).toContain("API v3");
-    expect(html).toContain("justify-between");
-    expect(html).toContain("text-right");
-    expect(html).not.toContain("Created");
+    expect(html).toContain("Status");
     expect(html).toContain("Reported");
     expect(html).toContain("Updated");
+    expect(html).not.toContain("Affected customer count");
+    expect(html).not.toContain(">Product<");
+    expect(html).not.toContain("Created");
+    expect(html).toContain("justify-between");
+    expect(html).toContain("text-right");
   });
 
   it("groups investigation with technical evidence in a secondary sidebar", () => {
@@ -455,14 +457,16 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Expected vs actual behaviour");
     expect(html).toContain("Expected behaviour");
     expect(html).toContain("Actual behaviour");
-    expect(html).toContain("Customer-reported");
+    expect(html).not.toContain("Customer-reported");
+    expect(html).not.toContain("Customer / support-provided");
     expect(html).toContain("Steps to reproduce");
     expect(html).not.toContain("Reproduction status");
     expect(html).toContain("font-bold");
-    expect(html).toContain("Root cause");
-    expect(html).toContain("Not yet identified");
+    expect(html).not.toContain("Root cause");
+    expect(html).not.toContain("Not yet identified");
     expect(html).toContain("Workaround");
-    expect(html).toContain("Not confirmed");
+    expect(html).toContain("Not identified");
+    expect(html).not.toContain("Not confirmed");
     expect(html).toContain("Troubleshooting performed");
     expect(html).toContain("Next steps");
     expect(html).toContain("Technical evidence");
@@ -501,9 +505,8 @@ describe("final case workspace presentation", () => {
       html.indexOf("Troubleshooting performed"),
     );
     expect(html.indexOf("Troubleshooting performed")).toBeLessThan(
-      html.indexOf("Root cause"),
+      html.indexOf("Workaround"),
     );
-    expect(html.indexOf("Root cause")).toBeLessThan(html.indexOf("Workaround"));
     expect(html.indexOf("Workaround")).toBeLessThan(html.indexOf("Next steps"));
   });
 
@@ -582,47 +585,147 @@ describe("final case workspace presentation", () => {
     );
   });
 
-  it("shows root cause as not yet identified rather than AI hypothesis", () => {
+  it("omits the generic root-cause card and keeps workaround wording honest", () => {
     const html = renderToStaticMarkup(<InvestigationTab record={record} />);
-    expect(html).toContain("Root cause");
-    expect(html).toContain("Not yet identified");
+    expect(html).not.toContain("Root cause");
+    expect(html).toContain("Workaround");
+    expect(html).toContain("Not identified");
     expect(html).not.toContain("Intermittent upstream failure");
     expect(html).not.toContain("Detailed AI reasoning that should be disclosed.");
   });
 
-  it("explains escalation assessment with authority in the sidebar", () => {
+  it("renders Assessment as one primary recommendation card", () => {
     const html = renderToStaticMarkup(
-      <AssessmentTab record={record} />,
+      <AssessmentTab record={record} goToStage={() => undefined} />,
     );
-    expect(html).toContain("Escalation recommendation");
-    expect(html).toContain("ESCALATE");
-    expect(html).toContain("Signals considered");
-    expect(html).not.toContain("Why this case qualifies");
-    expect(html).toContain("Technical assessment");
-    expect(html).toContain("98 / 100");
-    expect(html).toContain(`${ESCALATION_THRESHOLDS.escalateMin} / 100`);
-    expect(html).toContain("How is this calculated?");
-    expect(html).toContain("Customer-reported severity");
-    expect(html).toContain(`+${ESCALATION_WEIGHTS.reportedSeverityCritical}`);
-    expect(html).toContain(`+${ESCALATION_WEIGHTS.reportedSeverityHigh}`);
-    expect(html).toContain("← This case");
-    expect(html).toContain("Current case");
-    expect(html).toContain("Decision authority");
-    expect(html).toContain(caseDetailTwoColumnGridClassName);
-    expect(html).toContain("Rules-based assessment");
-    expect(html).toContain("Human reviewer");
-    expect(html).toContain("AI cannot approve an escalation.");
-    expect(html).not.toContain("Return to Overview to review decision");
-    expect(html).toContain("View AI reasoning");
-    expect(html).toContain("View validated evidence");
-    expect(html).not.toContain("Deterministic escalation assessment");
+    expect(html).toContain("Engine recommendation");
+    expect(html).toContain("Escalate to Engineering");
+    expect(html).toMatch(/>98</);
+    expect(html).toContain("/ 100");
+    expect(html).toContain("Next action");
+    expect(html).toContain("Go to Escalation approval");
+    expect(html).toContain("Case details");
+    expect(html).not.toContain("Recent activity");
+    expect(html).toContain(
+      "Advisory recommendation — not an approved escalation.",
+    );
+    expect(html).toContain("View assessment details");
+    // Default Assessment no longer duplicates Investigation / evidence cards.
+    expect(html).not.toContain("Investigation summary");
+    expect(html).not.toContain("Further investigation required");
+    expect(html).not.toContain("Technical evidence");
+    // Scoring detail stays behind the disclosure (closed by default).
+    expect(html).not.toContain("What contributed to this score");
+    expect(html).not.toContain("View AI reasoning");
+    expect(html).not.toContain("Decision authority");
+    expect(html).not.toContain("Escalation recommendation");
+    expect(html).not.toContain(">ESCALATE<");
+    expect(html).not.toContain("Technical assessment");
     expect(html).not.toContain("Approve escalation");
+    expect(html).toContain(caseDetailTwoColumnGridClassName);
+    // Threshold constants remain available to the details panel implementation.
+    expect(ESCALATION_THRESHOLDS.escalateMin).toBeGreaterThan(0);
+    expect(ESCALATION_WEIGHTS.reportedSeverityHigh).toBeGreaterThan(0);
   });
 
-  it("locks handoff before approval and exposes demo actions after", () => {
+  it("recommends requesting missing information for insufficient-evidence Assessment cases", () => {
+    const insufficient: CaseRecord = {
+      ...record,
+      severity: "medium",
+      customer: "[DEMO] Meridian Systems",
+      product: "SSO",
+      issueTitle: "[DEMO] SSO authentication fails after identity provider certificate rotation",
+      escalationResult: {
+        ...escalation,
+        escalationScore: 20,
+        recommendation: "insufficient_evidence",
+      },
+      analysis: {
+        ...analysis,
+        aiResult: {
+          ...analysis.aiResult,
+          assessedSeverity: "medium",
+          reproducibility: "not_reproduced",
+          missingEvidence: [
+            "Obtain a failing SAML response and corresponding authentication logs.",
+          ],
+          aiEscalationAssessment: "insufficient_data",
+        },
+      },
+    };
+    const html = renderToStaticMarkup(
+      <AssessmentTab record={insufficient} goToStage={() => undefined} />,
+    );
+    expect(html).toContain("Insufficient evidence");
+    expect(html).toMatch(/>20</);
+    expect(html).toContain("/ 100");
+    expect(html).toContain("Engine recommendation");
+    expect(html).toContain("has not been reproduced");
+    expect(html).toContain("missing authentication evidence");
+    expect(html).not.toContain("Open Investigation");
+    expect(html).not.toContain("Key gap");
+    expect(html).not.toContain("Further investigation required");
+    expect(html).not.toContain("Evidence gaps");
+  });
+
+  it("recommends troubleshooting for continue-investigation Assessment cases", () => {
+    const continuing: CaseRecord = {
+      ...record,
+      status: "investigation_continues",
+      customer: "[DEMO] Apex Digital",
+      product: "MS Teams Integration",
+      escalationResult: {
+        ...escalation,
+        escalationScore: 58,
+        recommendation: "continue_investigation",
+      },
+      analysis: {
+        ...analysis,
+        aiResult: {
+          ...analysis.aiResult,
+          missingEvidence: [
+            "Complete Teams webhook / bot permission logs for a failing public channel",
+            "Confirm bot membership in the failing public channel",
+          ],
+          recommendedNextSteps: [
+            "Confirm bot membership in the failing public channel.",
+          ],
+          aiEscalationAssessment: "likely_continue",
+        },
+      },
+      decision: {
+        id: "dec-reject",
+        caseId: record.id,
+        decision: "rejected",
+        rationale: "Need more channel permission checks.",
+        decidedBy: "support_engineer",
+        decidedAt: "2026-09-12T14:40:00.000Z",
+        escalationScoreAtDecision: 58,
+        recommendationAtDecision: "continue_investigation",
+        source: "human_decision",
+      },
+    };
+    const html = renderToStaticMarkup(
+      <AssessmentTab record={continuing} goToStage={() => undefined} />,
+    );
+    expect(html).toContain("Continue investigation");
+    expect(html).toMatch(/>58</);
+    expect(html).toContain("/ 100");
+    expect(html).toContain("Continue investigation recorded");
+    expect(html).toContain("bot membership");
+    expect(html).toContain("support tickets");
+    expect(html).toContain("Open Investigation");
+    expect(html).not.toContain("Further investigation required");
+  });
+
+  it("locks Create escalation before approval and exposes destination previews after", () => {
     const pending = renderToStaticMarkup(<HandoffTab record={record} />);
-    expect(pending).toContain("Awaiting human approval");
-    expect(pending).not.toContain("Create Jira escalation");
+    expect(pending).toContain("Create escalation");
+    expect(pending).toContain(
+      "Create escalation becomes available after escalation is approved.",
+    );
+    expect(pending).not.toContain("Create Jira issue");
+    expect(pending).not.toContain("Create Rootly incident");
 
     const approved: CaseRecord = {
       ...record,
@@ -641,29 +744,20 @@ describe("final case workspace presentation", () => {
       handoff,
     };
     const html = renderToStaticMarkup(<HandoffTab record={approved} />);
-    expect(html).toContain("Downstream actions");
-    expect(html).toContain("Create Jira escalation");
+    expect(html).toContain("Create Jira issue");
     expect(html).toContain("Create Rootly incident");
-    expect(html).toContain("Demo integration");
-    expect(html).toContain("Simulated only. No external systems are contacted.");
-    expect(html).not.toContain("Choose the action that fits the situation");
-    expect(html).toContain("✓ Approved");
-    expect(html).not.toContain("Escalation approved");
-    expect(html).toContain("Handoff summary");
-    expect(html).toContain("Ready for Engineering");
+    expect(html).not.toContain("Create destination record");
+    expect(html).not.toContain("Copy handoff");
+    expect(html).not.toContain("Choose destination");
+    expect(html).toContain("Escalation approved");
+    expect(html).toContain("Reason for escalation");
+    expect(html).not.toContain("Escalation summary");
+    expect(html).not.toContain("Approved package ready");
     expect(html).toContain("Decision");
-    expect(html).toContain("Escalate");
-    expect(html).toContain("98 / 100");
-    expect(html).toContain("Affected customer count");
+    expect(html).toContain("Approved");
     expect(html).toContain("Reviewer");
-    expect(html).toContain("Authorised reviewer");
-    expect(html).not.toContain("Support Engineer");
-    expect(html).toContain("Enough evidence to escalate to engineering.");
+    expect(html).toContain("Support engineer (recorded identity)");
     expect(html).toContain(caseDetailTwoColumnGridClassName);
-    expect(html).toContain("max-w-xl");
-    // Sidebar must not duplicate case header metadata
-    expect(html).not.toContain(">Customer<");
-    expect(html).not.toContain(">Product<");
     expect(html).not.toContain(">Case ID<");
   });
 
@@ -701,7 +795,7 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain("Escalation rejected");
     expect(html).toContain("Support Engineer");
     expect(html).not.toContain("support_engineer");
-    expect(html).toContain("Decided by");
+    expect(html).toContain("Recorded by");
     expect(html).toContain("Decided");
     expect(html).toContain("Rationale");
     expect(html).toContain(

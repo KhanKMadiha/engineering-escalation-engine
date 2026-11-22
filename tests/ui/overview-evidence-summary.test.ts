@@ -95,8 +95,10 @@ describe("buildOverviewEvidenceSummary", () => {
       decision: undefined,
     });
     expect(summary.nextAction.targetTab).toBe("assessment");
-    expect(summary.nextAction.title.toLowerCase()).toContain("decision");
-    expect(summary.nextAction.summary.toLowerCase()).toContain("form below");
+    expect(summary.nextAction.title.toLowerCase()).toContain("approval");
+    expect(summary.nextAction.summary.toLowerCase()).toContain(
+      "escalation approval",
+    );
   });
 
   it("points approved handoff cases at the handoff section", () => {
@@ -140,6 +142,6 @@ describe("buildOverviewEvidenceSummary", () => {
       },
     });
     expect(summary.nextAction.targetTab).toBe("handoff");
-    expect(summary.nextAction.title.toLowerCase()).toContain("handoff");
+    expect(summary.nextAction.title.toLowerCase()).toContain("create escalation");
   });
 });

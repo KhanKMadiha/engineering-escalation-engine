@@ -1,7 +1,9 @@
 import type { AnalysisModelClient } from "@/lib/analysis/analyze-case";
+import { createCaseEvent } from "@/lib/audit/case-events";
 import { CaseOrchestrator } from "@/lib/cases/case-orchestrator";
 import { CaseService } from "@/lib/cases/case-service";
 import { DecisionService } from "@/lib/cases/decision-service";
+import { DEFAULT_DECIDED_BY } from "@/lib/cases/decision-validators";
 import { validateCreateCaseInput } from "@/lib/cases/case-validators";
 import {
   DEMO_CASE_DEFINITIONS,
@@ -9,12 +11,18 @@ import {
   findDemoDefinitionByTitle,
   isLegacyDemoCustomerName,
   type DemoCaseKey,
+  type DemoSeedDecision,
 } from "@/lib/demo/demo-cases";
 import { seedDemoTechnicalEvidenceForCase } from "@/lib/demo/demo-technical-evidence";
 import { buildDemoEventTimestamps } from "@/lib/demo/demo-timestamps";
 import type { CaseRepository } from "@/lib/repositories/case-repository";
 import { getTechnicalEvidenceRepository } from "@/lib/repositories/get-technical-evidence-repository";
-import type { EscalationRecommendation, SupportCase } from "@/types";
+import { assertDemoSeedRuntimeAllowed } from "@/lib/security/runtime-access";
+import type {
+  EscalationRecommendation,
+  HumanDecision,
+  SupportCase,
+} from "@/types";
 
 export type SeedDemoCaseResult = {
   key: DemoCaseKey;
@@ -179,16 +187,34 @@ export async function seedDemoCases(
     let finalRecommendation = analysis.escalationResult.recommendation;
 
     if (definition.seedDecision) {
-      const decided = await decisionService.recordDecision({
-        caseId: analysis.caseId,
-        decision: definition.seedDecision.decision,
-        rationale: definition.seedDecision.rationale,
-      });
-      finalStatus = decided.record.status;
-      finalScore =
-        decided.record.escalationResult?.escalationScore ?? finalScore;
-      finalRecommendation =
-        decided.record.escalationResult?.recommendation ?? finalRecommendation;
+      // Escalate approvals still go through DecisionService (awaiting_decision).
+      // Continue-investigation historical decisions are attached after Phase 1
+      // routing already lands on investigation_continues — DecisionService no
+      // longer accepts ordinary decisions for non-escalate recommendations.
+      if (
+        analysis.record.status === "investigation_continues" &&
+        definition.seedDecision.decision === "rejected"
+      ) {
+        await attachHistoricalContinueDecision(
+          options.repository,
+          analysis.caseId,
+          definition.seedDecision,
+          analysis.escalationResult.escalationScore,
+          analysis.escalationResult.recommendation,
+        );
+      } else {
+        const decided = await decisionService.recordDecision({
+          caseId: analysis.caseId,
+          decision: definition.seedDecision.decision,
+          rationale: definition.seedDecision.rationale,
+        });
+        finalStatus = decided.record.status;
+        finalScore =
+          decided.record.escalationResult?.escalationScore ?? finalScore;
+        finalRecommendation =
+          decided.record.escalationResult?.recommendation ??
+          finalRecommendation;
+      }
     }
 
     // Seed Phase B evidence before fixing demo timestamps so audit events
@@ -237,6 +263,70 @@ export async function seedDemoCases(
     staleSkipped,
     leftoverDemoTitles,
   };
+}
+
+/**
+ * Attaches a historical "continue investigation" decision for demo narrative
+ * after Phase 1 routing already set investigation_continues.
+ * Does not change status, create a handoff, or bypass DecisionService for
+ * ordinary escalate approvals.
+ */
+async function attachHistoricalContinueDecision(
+  repository: CaseRepository,
+  caseId: string,
+  seedDecision: DemoSeedDecision,
+  escalationScore: number,
+  recommendation: EscalationRecommendation,
+): Promise<void> {
+  const record = await repository.getCaseWithDetails(caseId);
+  if (!record?.escalationResult) {
+    throw new Error(
+      `Demo seed cannot attach continue decision without escalation result (${caseId})`,
+    );
+  }
+  if (record.status !== "investigation_continues") {
+    throw new Error(
+      `Demo seed continue decision requires investigation_continues (got ${record.status})`,
+    );
+  }
+  if (record.decision) {
+    return;
+  }
+
+  const assessmentVersion =
+    record.currentAssessmentVersion ?? record.analysis?.assessmentVersion ?? 1;
+
+  const decision: HumanDecision = {
+    id: crypto.randomUUID(),
+    caseId,
+    decision: "rejected",
+    rationale: seedDecision.rationale,
+    decidedAt: seedDecision.decidedAt,
+    decidedBy: DEFAULT_DECIDED_BY,
+    escalationScoreAtDecision: escalationScore,
+    recommendationAtDecision: recommendation,
+    source: "human_decision",
+    assessmentVersion,
+    isException: false,
+    exceptionReason: null,
+  };
+
+  await repository.saveHumanDecision(caseId, decision);
+  await repository.appendEvent(
+    caseId,
+    createCaseEvent({
+      caseId,
+      eventType: "human_decision_recorded",
+      metadata: {
+        decision: decision.decision,
+        decidedBy: decision.decidedBy,
+        score: decision.escalationScoreAtDecision,
+        recommendation: decision.recommendationAtDecision,
+        rationale: decision.rationale.slice(0, 500),
+        seedHistoricalContinue: true,
+      },
+    }),
+  );
 }
 
 async function applyFixedDemoTimestamps(
@@ -303,13 +393,19 @@ async function applyFixedDemoTimestamps(
   });
 }
 
-/** Guard for CLI / HTTP seed entry points — never auto-run in production. */
+/** Guard for CLI / HTTP seed entry points — never auto-run on hosted/public. */
 export function assertDemoSeedAllowed(env: NodeJS.ProcessEnv = process.env): void {
-  if (env.NODE_ENV === "production" && env.ALLOW_DEMO_SEED !== "1") {
+  // Hosted platforms and non-local runtimes are blocked — ALLOW_DEMO_SEED cannot override.
+  try {
+    assertDemoSeedRuntimeAllowed(env);
+  } catch (error) {
     throw new Error(
-      "Demo seed is blocked in production unless ALLOW_DEMO_SEED=1 is set explicitly.",
+      error instanceof Error
+        ? error.message
+        : "Demo seed is blocked on hosted/public deployments.",
     );
   }
+
   if (env.ALLOW_DEMO_SEED !== "1") {
     throw new Error(
       "Demo seed requires explicit ALLOW_DEMO_SEED=1 (does not run automatically).",

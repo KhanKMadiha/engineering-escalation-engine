@@ -32,7 +32,10 @@ export function CaseIssueHeader({ record }: CaseIssueHeaderProps) {
         <div className="flex flex-wrap items-center gap-2">
           <SeverityBadge severity={record.severity} />
           <EnvironmentBadge environment={record.environment} />
-          <StatusBadge status={record.status} />
+          <StatusBadge
+            status={record.status}
+            recommendation={record.escalationResult?.recommendation}
+          />
         </div>
       </div>
     </header>
