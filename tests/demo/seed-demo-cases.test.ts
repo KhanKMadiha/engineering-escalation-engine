@@ -21,16 +21,29 @@ describe("demo seed", () => {
     ).toThrow(/ALLOW_DEMO_SEED=1/);
   });
 
-  it("blocks production unless ALLOW_DEMO_SEED=1", () => {
+  it("blocks hosted and non-local runtimes even when ALLOW_DEMO_SEED=1", () => {
     expect(() =>
       assertDemoSeedAllowed({
         NODE_ENV: "production",
         ALLOW_DEMO_SEED: "1",
       } as NodeJS.ProcessEnv),
-    ).not.toThrow();
+    ).toThrow(/disabled|blocked/i);
     expect(() =>
-      assertDemoSeedAllowed({ NODE_ENV: "production" } as NodeJS.ProcessEnv),
-    ).toThrow(/production/);
+      assertDemoSeedAllowed({
+        NODE_ENV: "development",
+        VERCEL: "1",
+        ALLOW_DEMO_SEED: "1",
+      } as NodeJS.ProcessEnv),
+    ).toThrow(/disabled|blocked|hosted/i);
+  });
+
+  it("allows seed only in verified local development with ALLOW_DEMO_SEED=1", () => {
+    expect(() =>
+      assertDemoSeedAllowed({
+        NODE_ENV: "development",
+        ALLOW_DEMO_SEED: "1",
+      } as NodeJS.ProcessEnv),
+    ).not.toThrow();
   });
 
   it("seeds ten lifecycle-stage demo cases with valid workflow statuses", async () => {
@@ -51,7 +64,7 @@ describe("demo seed", () => {
     expect(byKey.insufficient_evidence.recommendation).toBe(
       "insufficient_evidence",
     );
-    expect(byKey.insufficient_evidence.status).toBe("awaiting_decision");
+    expect(byKey.insufficient_evidence.status).toBe("investigation_continues");
     expect(byKey.insufficient_evidence.escalationScore).toBe(20);
 
     expect(byKey.continue_investigation.recommendation).toBe(

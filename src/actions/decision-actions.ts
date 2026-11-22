@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   DecisionAlreadyRecordedError,
   DecisionNotEligibleError,
@@ -12,7 +13,16 @@ import {
   type DecisionFieldErrors,
 } from "@/lib/cases/decision-validators";
 import { getDecisionService } from "@/lib/cases/get-decision-service";
+import { DemoCaseAccessError } from "@/lib/demo/demo-case-access";
+import { ensureDemoWorkspaceForWrite } from "@/lib/demo/demo-workspace-session";
+import { resolveWritableDemoCase } from "@/lib/demo/resolve-writable-demo-case";
+import {
+  isDemoForkCase,
+  isSharedFictionalDemoCase,
+} from "@/lib/demo/demo-workspace";
+import { getCaseRepository } from "@/lib/repositories/get-case-repository";
 import { DecisionInProgressError } from "@/lib/security/request-guards";
+import { DemoInteractiveWritesDisabledError } from "@/lib/security/runtime-access";
 import { logOperationalError } from "@/lib/security/safe-log";
 
 export type SubmitHumanDecisionActionState = {
@@ -21,6 +31,8 @@ export type SubmitHumanDecisionActionState = {
   errorCode?: string;
   fieldErrors?: DecisionFieldErrors;
   rationale?: string;
+  /** Private fork id when CoW redirected away from a template. */
+  caseId?: string;
 };
 
 export async function submitHumanDecision(
@@ -48,29 +60,105 @@ export async function submitHumanDecision(
   }
 
   try {
+    const repository = getCaseRepository();
+    const existing = await repository.getCaseById(validation.data.caseId);
+    if (!existing) {
+      throw new CaseNotFoundError(validation.data.caseId);
+    }
+
+    // Soft eligibility before creating a workspace/fork (e.g. Meridian).
+    if (isSharedFictionalDemoCase(existing) || isDemoForkCase(existing)) {
+      if (existing.decision) {
+        throw new DecisionAlreadyRecordedError(existing.id);
+      }
+      if (existing.status !== "awaiting_decision") {
+        throw new DecisionNotEligibleError(
+          `Case status "${existing.status}" is not awaiting a human decision.`,
+        );
+      }
+      if (existing.escalationResult?.recommendation !== "escalate") {
+        throw new DecisionNotEligibleError(
+          `Ordinary human decisions are only allowed when the engine recommends escalation (got "${existing.escalationResult?.recommendation ?? "none"}").`,
+        );
+      }
+    }
+
+    // Shared fictional templates: CoW into a private workspace before deciding.
+    // Organisational/local non-template cases decide in place.
+    let writableCaseId = validation.data.caseId;
+    let isSimulated = false;
+    let redirectedFromTemplate = false;
+
+    if (isSharedFictionalDemoCase(existing) || isDemoForkCase(existing)) {
+      const session = await ensureDemoWorkspaceForWrite(repository);
+      const resolved = await resolveWritableDemoCase(
+        validation.data.caseId,
+        session.workspaceId,
+        repository,
+      );
+      writableCaseId = resolved.record.id;
+      redirectedFromTemplate = resolved.redirectedFromTemplate;
+      isSimulated = true;
+    }
+
     const result = await getDecisionService().recordDecision({
-      caseId: validation.data.caseId,
+      caseId: writableCaseId,
       decision: validation.data.decision,
       rationale: validation.data.rationale,
       decidedBy: validation.data.decidedBy,
+      isSimulated,
     });
 
+    revalidatePath(`/cases/${writableCaseId}`);
     revalidatePath(`/cases/${caseId}`);
     revalidatePath("/");
+    revalidatePath("/pending-reviews");
+
+    if (redirectedFromTemplate && writableCaseId !== caseId) {
+      redirect(`/cases/${writableCaseId}`);
+    }
 
     return {
       ok: true,
+      caseId: writableCaseId,
       message:
         result.decision.decision === "approved"
           ? "Escalation approved. Engineering handoff created."
           : "Continue investigation recorded. Engineering handoff was not created.",
     };
   } catch (error) {
+    // next/navigation redirect throws; rethrow so Next can handle it.
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      String((error as { digest: string }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw error;
+    }
+
     if (error instanceof CaseNotFoundError) {
       return {
         ok: false,
         errorCode: "not_found",
         message: "Case not found.",
+        rationale,
+      };
+    }
+    if (error instanceof DemoInteractiveWritesDisabledError) {
+      return {
+        ok: false,
+        errorCode: "demo_writes_disabled",
+        message: error.message,
+        rationale,
+      };
+    }
+    if (error instanceof DemoCaseAccessError) {
+      return {
+        ok: false,
+        errorCode: "not_eligible",
+        message: error.message,
         rationale,
       };
     }

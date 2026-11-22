@@ -7,7 +7,10 @@ import {
   type NormalizedCaseAnalysis,
 } from "@/lib/analysis/analyze-case";
 import { CaseNotFoundError, CaseService } from "@/lib/cases/case-service";
-import { canTransition } from "@/lib/cases/status-machine";
+import {
+  canTransition,
+  statusAfterEscalationRecommendation,
+} from "@/lib/cases/status-machine";
 import {
   EscalationEngineError,
   evaluateEscalation,
@@ -90,6 +93,9 @@ function toStoredAnalysis(analysis: NormalizedCaseAnalysis): StoredAnalysis {
     model: analysis.model,
     promptVersion: analysis.promptVersion,
     createdAt: analysis.createdAt,
+    // Repository assigns the authoritative version on save.
+    assessmentVersion: 1,
+    isCurrent: true,
   };
 }
 
@@ -278,8 +284,11 @@ export class CaseOrchestrator {
       }
 
       const afterEvaluation = await this.caseService.getCaseById(caseId);
-      if (canTransition(afterEvaluation.status, "awaiting_decision")) {
-        await this.caseService.transitionStatus(caseId, "awaiting_decision");
+      const nextStatus = statusAfterEscalationRecommendation(
+        escalationResult.recommendation,
+      );
+      if (canTransition(afterEvaluation.status, nextStatus)) {
+        await this.caseService.transitionStatus(caseId, nextStatus);
       }
 
       const updated = await this.caseService.getCaseById(caseId);

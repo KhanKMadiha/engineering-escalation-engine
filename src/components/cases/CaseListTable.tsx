@@ -143,7 +143,10 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                     <SeverityBadge severity={item.severity} />
                   </td>
                   <td className={cellClass}>
-                    <StatusBadge status={item.status} />
+                    <StatusBadge
+                      status={item.status}
+                      recommendation={item.escalationRecommendation}
+                    />
                   </td>
                   <td className={cellClass}>
                     <RecommendationCell item={item} />
@@ -176,7 +179,10 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                     {caseKey}
                   </span>
                   <SeverityBadge severity={item.severity} />
-                  <StatusBadge status={item.status} />
+                  <StatusBadge
+                    status={item.status}
+                    recommendation={item.escalationRecommendation}
+                  />
                 </div>
                 <p className="mt-2 text-[15px] font-semibold text-foreground">
                   {issueLabel}

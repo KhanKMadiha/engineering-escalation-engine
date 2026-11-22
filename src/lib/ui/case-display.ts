@@ -13,7 +13,8 @@ const FRIENDLY_SIGNAL_LABELS: Record<string, string> = {
   troubleshooting_completed: "Troubleshooting documented",
   reproducibility: "Reproducibility",
   multiple_affected_customers: "Multiple affected customers",
-  configuration_or_user_error: "Configuration or user error",
+  // Presentation only — signal is triggered by AI issue category, not a confirmed cause.
+  configuration_or_user_error: "Possible configuration or user error",
   missing_logs_and_request_ids: "Missing logs or request IDs",
 };
 
@@ -102,8 +103,9 @@ export function formatDecidedByLabel(decidedBy: string): string {
 }
 
 /**
- * Demo-facing reviewer label for handoff context. Maps the placeholder identity
- * `support_engineer` to a role-neutral label. Presentation only.
+ * Demo-facing reviewer label for handoff context.
+ * Maps the placeholder identity `support_engineer` without implying RBAC.
+ * Presentation only — does not claim role-based approval enforcement.
  */
 export function formatReviewerDisplayLabel(decidedBy: string): string {
   const trimmed = decidedBy.trim();
@@ -112,7 +114,7 @@ export function formatReviewerDisplayLabel(decidedBy: string): string {
   }
   const normalized = trimmed.toLowerCase().replaceAll(/\s+/g, "_");
   if (normalized === "support_engineer") {
-    return "Authorised reviewer";
+    return "Support engineer (recorded identity)";
   }
   return formatDecidedByLabel(trimmed);
 }

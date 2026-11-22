@@ -101,7 +101,7 @@ export type DemoCaseDefinition = {
  *
  * Original three (preserved dates):
  * A — Northstar Financial / API v3 → escalate → approve → escalated (8 Sep 2026)
- * B — Meridian Systems / SSO → insufficient_evidence → awaiting_decision (11 Sep 2026)
+ * B — Meridian Systems / SSO → insufficient_evidence → investigation_continues (11 Sep 2026)
  * C — Apex Digital / MS Teams → continue_investigation → reject →
  *     investigation_continues (12 Sep 2026)
  *
@@ -128,13 +128,9 @@ const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO_CASE_MARKER} Northstar Financial`,
       product: "API v3",
       severity: "high",
-      issueTitle: `${DEMO_CASE_MARKER} Intermittent 500 errors when retrieving articles through API v3`,
-      issueDescription: [
-        "Multiple enterprise customers are intermittently unable to retrieve articles through the API.",
-        "Failed responses include HTTP status: 500, Error: Internal Server Error.",
-        "Request ID: req-demo-48291",
-        "Timestamp: 2026-09-08T09:14:32Z",
-      ].join("\n"),
+      issueTitle: `${DEMO_CASE_MARKER} HTTP 500 errors when retrieving articles via API v3`,
+      issueDescription:
+        "Customers intermittently get HTTP 500 when retrieving articles via API v3 in prod. Request ID: req-demo-48291.",
       environment: "production",
       stepsToReproduce: [
         "1. Authenticate using a valid enterprise API credential.",
@@ -229,18 +225,15 @@ const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
     key: "insufficient_evidence",
     label: "SSO incomplete evidence",
     expectedRecommendation: "insufficient_evidence",
-    expectedStatus: "awaiting_decision",
+    expectedStatus: "investigation_continues",
     reportedAt: "2026-09-11T10:20:00.000Z",
     createInput: {
       customer: `${DEMO_CASE_MARKER} Meridian Systems`,
       product: "SSO",
       severity: "medium",
-      issueTitle: `${DEMO_CASE_MARKER} SSO authentication fails after identity provider certificate rotation`,
-      issueDescription: [
-        "SSO authentication began failing for some users after an identity provider certificate rotation.",
-        "Customer suspects the rotation or related IdP configuration, but has not confirmed whether this is a configuration issue or a product defect.",
-        "Investigation has started; evidence remains incomplete.",
-      ].join("\n"),
+      issueTitle: `${DEMO_CASE_MARKER} SSO login fails for some users after IdP certificate rotation`,
+      issueDescription:
+        "Some users cannot log in via SSO after an IdP certificate rotation. Still waiting for complete SAML error details.",
       environment: "production",
       stepsToReproduce: [
         "1. Attempt SSO login with an affected user account.",
@@ -249,14 +242,14 @@ const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
         "4. Support has not yet captured a complete SAML failure package.",
       ].join("\n"),
       expectedBehaviour:
-        "SSO authentication should succeed for authorised users after a valid IdP certificate rotation.",
+        "SSO login should succeed for authorised users after a valid IdP certificate rotation.",
       actualBehaviour:
-        "SSO authentication fails for some users after the identity provider certificate rotation.",
+        "SSO login fails for some users after the identity provider certificate rotation.",
       troubleshootingPerformed: [
         "Confirmed the customer recently rotated the IdP signing certificate.",
         "Asked for the rotation window and affected user samples.",
         "Requested SAML response / assertion for a failing login.",
-        "Configuration versus product defect is not yet established.",
+        "Still waiting for complete SAML error details.",
       ].join("\n"),
       logsErrors:
         "Partial customer note: SSO authentication failed after certificate rotation. No complete application logs provided.",
@@ -321,12 +314,9 @@ const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       customer: `${DEMO_CASE_MARKER} Apex Digital`,
       product: "MS Teams Integration",
       severity: "high",
-      issueTitle: `${DEMO_CASE_MARKER} MS Teams Auto-Answer fails to respond in public channels`,
-      issueDescription: [
-        "MS Teams Auto-Answer fails to respond in public channels while still working in some private channels.",
-        "Investigation is ongoing. Channel permissions or bot membership may still need to be ruled out.",
-        "Engineering escalation would be premature until configuration and permissions are checked.",
-      ].join("\n"),
+      issueTitle: `${DEMO_CASE_MARKER} MS Teams Auto-Answer not responding in public channels`,
+      issueDescription:
+        "Auto-Answer works in some private channels but does not respond in public channels. Still checking channel permissions / bot membership.",
       environment: "production",
       stepsToReproduce: [
         "1. Open a public Teams channel where Auto-Answer is expected.",
@@ -344,7 +334,7 @@ const ORIGINAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
         "Compared behaviour with a private channel that still responds.",
         "Asked whether bot permissions differ by channel type.",
         "Requested Teams activity / webhook samples for a failing public-channel attempt.",
-        "Troubleshooting is incomplete; configuration and permissions are not fully ruled out.",
+        "Troubleshooting is incomplete; still checking channel permissions / bot membership.",
       ].join("\n"),
       logsErrors: [
         "Customer-provided note: Auto-Answer timeout in public channel.",

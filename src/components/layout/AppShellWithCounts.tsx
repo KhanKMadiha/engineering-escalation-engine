@@ -1,10 +1,11 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { getCaseService } from "@/lib/cases/get-case-service";
+import { listVisibleCases } from "@/lib/demo/list-visible-cases";
 import { buildCaseQueueStats } from "@/lib/ui/case-queue-stats";
 import type { ReactNode } from "react";
 
 /**
  * Server wrapper that supplies sidebar badge counts from real case statuses.
+ * Counts respect anonymous workspace isolation (templates + own forks only).
  */
 export async function AppShellWithCounts({
   children,
@@ -15,7 +16,7 @@ export async function AppShellWithCounts({
   let handoffsCount = 0;
 
   try {
-    const cases = await getCaseService().listCases();
+    const cases = await listVisibleCases();
     const stats = buildCaseQueueStats(cases);
     pendingReviewsCount = stats.awaitingReview;
     handoffsCount = stats.readyForHandoff;

@@ -202,6 +202,35 @@ describe("DecisionService", () => {
     ).rejects.toBeInstanceOf(DecisionNotEligibleError);
   });
 
+  it("Phase 1: ordinary decisions require an escalate recommendation", async () => {
+    const created = await repo.createCase(sampleInput);
+    await repo.saveAnalysis(created.id, analysis);
+    await repo.saveEscalationResult(created.id, {
+      ...escalation,
+      escalationScore: 58,
+      recommendation: "continue_investigation",
+    });
+    await repo.updateCaseStatus(created.id, "submitted");
+    await repo.updateCaseStatus(created.id, "analyzing");
+    await repo.updateCaseStatus(created.id, "awaiting_decision");
+
+    await expect(
+      service.recordDecision({
+        caseId: created.id,
+        decision: "approved",
+        rationale: "Should not approve a continue-investigation case.",
+      }),
+    ).rejects.toBeInstanceOf(DecisionNotEligibleError);
+
+    await expect(
+      service.recordDecision({
+        caseId: created.id,
+        decision: "rejected",
+        rationale: "Should not require a decision to continue investigating.",
+      }),
+    ).rejects.toBeInstanceOf(DecisionNotEligibleError);
+  });
+
   it("13. decision cannot be submitted if escalation result is missing", async () => {
     const created = await repo.createCase(sampleInput);
     await repo.updateCaseStatus(created.id, "submitted");

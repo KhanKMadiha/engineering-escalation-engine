@@ -1,14 +1,23 @@
-import type { CaseStatus } from "@/types";
+import type { CaseStatus, EscalationRecommendation } from "@/types";
 
 /**
  * Allowed status transitions for the case lifecycle.
  * Phase 2 enforces the graph; later phases drive transitions via services.
+ *
+ * Phase 1 routing: after assessment, escalate → awaiting_decision;
+ * continue_investigation / insufficient_evidence → investigation_continues
+ * (direct from analyzing). Escalated remains DecisionService-only.
  */
 export const CASE_STATUS_TRANSITIONS: Record<CaseStatus, readonly CaseStatus[]> =
   {
     draft: ["submitted", "closed"],
     submitted: ["analyzing", "closed"],
-    analyzing: ["awaiting_decision", "submitted", "closed"],
+    analyzing: [
+      "awaiting_decision",
+      "investigation_continues",
+      "submitted",
+      "closed",
+    ],
     awaiting_decision: [
       "analyzing",
       "escalated",
@@ -19,6 +28,18 @@ export const CASE_STATUS_TRANSITIONS: Record<CaseStatus, readonly CaseStatus[]> 
     investigation_continues: ["submitted", "closed"],
     closed: [],
   };
+
+/**
+ * Post-assessment lifecycle target from the engine recommendation.
+ * Does not approve escalation or create a handoff.
+ */
+export function statusAfterEscalationRecommendation(
+  recommendation: EscalationRecommendation,
+): Extract<CaseStatus, "awaiting_decision" | "investigation_continues"> {
+  return recommendation === "escalate"
+    ? "awaiting_decision"
+    : "investigation_continues";
+}
 
 export class InvalidStatusTransitionError extends Error {
   readonly from: CaseStatus;

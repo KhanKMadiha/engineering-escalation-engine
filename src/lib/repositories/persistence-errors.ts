@@ -35,6 +35,26 @@ export class DuplicateDecisionError extends PersistenceError {
   }
 }
 
+export class HandoffAlreadyExistsError extends PersistenceError {
+  constructor(caseId: string) {
+    super(
+      `Engineering handoff already exists for case ${caseId}`,
+      "HANDOFF_ALREADY_EXISTS",
+    );
+    this.name = "HandoffAlreadyExistsError";
+  }
+}
+
+export class StaleAssessmentError extends PersistenceError {
+  constructor(caseId: string, expectedVersion: number, currentVersion: number | null) {
+    super(
+      `Cannot record a decision for case ${caseId} against assessment v${expectedVersion}; current is v${currentVersion ?? "none"}`,
+      "STALE_ASSESSMENT",
+    );
+    this.name = "StaleAssessmentError";
+  }
+}
+
 export class ForeignKeyViolationError extends PersistenceError {
   constructor(message = "Referenced record does not exist") {
     super(message, "FOREIGN_KEY_VIOLATION");

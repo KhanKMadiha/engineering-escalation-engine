@@ -76,7 +76,6 @@ describe("CaseOrchestrator analysis pipeline", () => {
       return;
     }
 
-    expect(result.record.status).toBe("awaiting_decision");
     expect(result.record.analysis).toBeDefined();
     expect(result.record.analysis?.validatedEvidence).toHaveLength(1);
     expect(result.record.analysis?.rejectedEvidence).toHaveLength(1);
@@ -85,6 +84,12 @@ describe("CaseOrchestrator analysis pipeline", () => {
     expect(result.record.escalationResult?.recommendation).toBe(
       result.escalationResult.recommendation,
     );
+    // Phase 1: status follows recommendation; never auto-escalates.
+    if (result.escalationResult.recommendation === "escalate") {
+      expect(result.record.status).toBe("awaiting_decision");
+    } else {
+      expect(result.record.status).toBe("investigation_continues");
+    }
     expect(result.record.status).not.toBe("escalated");
 
     const eventTypes = result.record.events.map((event) => event.eventType);

@@ -22,7 +22,20 @@ import {
   MissingEscalationResultError,
 } from "@/lib/cases/decision-service";
 import { validateSubmitHumanDecision } from "@/lib/cases/decision-validators";
+import {
+  assertCaseReadableByWorkspace,
+  DemoCaseAccessError,
+} from "@/lib/demo/demo-case-access";
+import {
+  isDemoForkCase,
+  isSharedFictionalDemoCase,
+} from "@/lib/demo/demo-workspace";
+import { ensureDemoWorkspaceForWrite } from "@/lib/demo/demo-workspace-session";
+import { getOptionalDemoWorkspaceId } from "@/lib/demo/demo-workspace-session";
+import { resolveWritableDemoCase } from "@/lib/demo/resolve-writable-demo-case";
 import { DecisionInProgressError } from "@/lib/security/request-guards";
+import { MutationsDisabledError } from "@/lib/security/runtime-access";
+import { assertMutationsAllowed } from "@/lib/security/runtime-access";
 
 function resolveServices(services?: ApiServices): ApiServices {
   return services ?? getDefaultApiServices();
@@ -53,6 +66,15 @@ export async function createCaseHandler(
   ctx: ApiHandlerContext,
   services?: ApiServices,
 ): Promise<Response> {
+  try {
+    assertMutationsAllowed();
+  } catch (error) {
+    if (error instanceof MutationsDisabledError) {
+      throw new ApiError(403, "FORBIDDEN", error.message);
+    }
+    throw error;
+  }
+
   const body = await parseJsonBody(ctx.request);
   const validation = validateCreateCaseInput(body);
   if (!validation.success) {
@@ -86,9 +108,14 @@ export async function listCasesHandler(
     );
   }
 
+  const workspaceId = await getOptionalDemoWorkspaceId(
+    resolveServices(services).repository,
+  );
   const pageResult = await resolveServices(services).caseService.listCasesPage({
     status: query.status,
     severity: query.severity,
+    demoWorkspaceId: workspaceId,
+    includeSharedTemplates: true,
     page: query.page,
     pageSize: query.pageSize,
   });
@@ -110,11 +137,16 @@ export async function getCaseHandler(
 ): Promise<Response> {
   const caseId = parseCaseId(ctx.params?.id);
   try {
-    const record =
-      await resolveServices(services).caseService.getCaseById(caseId);
+    const resolved = resolveServices(services);
+    const record = await resolved.caseService.getCaseById(caseId);
+    const workspaceId = await getOptionalDemoWorkspaceId(resolved.repository);
+    assertCaseReadableByWorkspace(record, workspaceId);
     return jsonOk(ctx.requestId, { data: toCaseDetailResponse(record) });
   } catch (error) {
     if (error instanceof CaseNotFoundError) {
+      throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
+    }
+    if (error instanceof DemoCaseAccessError) {
       throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
     }
     throw error;
@@ -201,13 +233,31 @@ export async function recordDecisionHandler(
   }
 
   try {
-    const result = await resolveServices(
-      services,
-    ).decisionService.recordDecision({
-      caseId: validation.data.caseId,
+    const resolved = resolveServices(services);
+    const existing = await resolved.caseService.getCaseById(
+      validation.data.caseId,
+    );
+
+    let writableCaseId = validation.data.caseId;
+    let isSimulated = false;
+
+    if (isSharedFictionalDemoCase(existing) || isDemoForkCase(existing)) {
+      const session = await ensureDemoWorkspaceForWrite(resolved.repository);
+      const writable = await resolveWritableDemoCase(
+        validation.data.caseId,
+        session.workspaceId,
+        resolved.repository,
+      );
+      writableCaseId = writable.record.id;
+      isSimulated = true;
+    }
+
+    const result = await resolved.decisionService.recordDecision({
+      caseId: writableCaseId,
       decision: validation.data.decision,
       rationale: validation.data.rationale,
       decidedBy: validation.data.decidedBy,
+      isSimulated,
     });
     return jsonOk(ctx.requestId, {
       data: toDecisionActionResponse(result),
@@ -215,6 +265,9 @@ export async function recordDecisionHandler(
   } catch (error) {
     if (error instanceof CaseNotFoundError) {
       throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
+    }
+    if (error instanceof DemoCaseAccessError) {
+      throw new ApiError(409, "INVALID_CASE_STATE", error.message);
     }
     if (error instanceof DecisionAlreadyRecordedError) {
       throw new ApiError(409, "DECISION_ALREADY_RECORDED", error.message);
@@ -238,8 +291,10 @@ export async function listCaseEventsHandler(
 ): Promise<Response> {
   const caseId = parseCaseId(ctx.params?.id);
   try {
-    const record =
-      await resolveServices(services).caseService.getCaseById(caseId);
+    const resolved = resolveServices(services);
+    const record = await resolved.caseService.getCaseById(caseId);
+    const workspaceId = await getOptionalDemoWorkspaceId(resolved.repository);
+    assertCaseReadableByWorkspace(record, workspaceId);
     const chronological = [...record.events].sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt),
     );
@@ -249,6 +304,9 @@ export async function listCaseEventsHandler(
     });
   } catch (error) {
     if (error instanceof CaseNotFoundError) {
+      throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
+    }
+    if (error instanceof DemoCaseAccessError) {
       throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
     }
     throw error;
@@ -265,6 +323,18 @@ export async function getCaseHandoffHandler(
   const exists = await servicesResolved.caseService.getCaseOrNull(caseId);
   if (!exists) {
     throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
+  }
+
+  const workspaceId = await getOptionalDemoWorkspaceId(
+    servicesResolved.repository,
+  );
+  try {
+    assertCaseReadableByWorkspace(exists, workspaceId);
+  } catch (error) {
+    if (error instanceof DemoCaseAccessError) {
+      throw new ApiError(404, "CASE_NOT_FOUND", "Case not found.");
+    }
+    throw error;
   }
 
   const handoff =

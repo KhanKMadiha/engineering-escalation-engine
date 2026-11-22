@@ -4,6 +4,9 @@ import type {
   CaseRecord,
   CaseStatus,
   CreateCaseInput,
+  DemoDownstreamDestination,
+  DemoDownstreamRecord,
+  DemoWorkspace,
   EscalationEngineResult,
   EscalationHandoff,
   HumanDecision,
@@ -23,6 +26,11 @@ export type PersistDecisionOutcomeInput = {
   handoff: EscalationHandoff | null;
   targetStatus: Extract<CaseStatus, "escalated" | "investigation_continues">;
   events: CaseEvent[];
+  /**
+   * Must match the case's current assessment version (stale-guard).
+   * Defaults to decision.assessmentVersion when omitted.
+   */
+  expectedAssessmentVersion?: number;
 };
 
 /**
@@ -87,4 +95,46 @@ export interface CaseRepository {
       handoffCreatedAt?: string | null;
     },
   ): Promise<void>;
+
+  /**
+   * Approach D — optional until workspace migration is applied + implemented.
+   * Implementations may throw if demo workspaces are not supported yet.
+   */
+  createDemoWorkspace?(workspace: DemoWorkspace): Promise<DemoWorkspace>;
+  getDemoWorkspace?(id: string): Promise<DemoWorkspace | null>;
+  touchDemoWorkspace?(id: string, lastActiveAt: string): Promise<void>;
+  /**
+   * Copy-on-write clone of a shared template into a visitor workspace.
+   * Copies case + current analysis/escalation + evidence metadata.
+   * Approved templates also copy decision/handoff with original provenance.
+   * Does not copy unrelated event history or attachment bytes.
+   * Idempotent per (workspaceId, templateCaseId) via unique index.
+   */
+  cloneCaseIntoDemoWorkspace?(
+    templateCaseId: string,
+    workspaceId: string,
+  ): Promise<CaseRecord>;
+  /** Deletes expired workspaces; forks cascade. Returns number removed. */
+  purgeExpiredDemoWorkspaces?(nowIso?: string): Promise<number>;
+
+  /**
+   * Phase 2B — simulated Jira/Rootly persistence (optional until migration).
+   * Idempotent per (workspaceId, caseId, destination).
+   */
+  saveDemoDownstreamRecord?(
+    record: DemoDownstreamRecord,
+  ): Promise<DemoDownstreamRecord>;
+  getDemoDownstreamRecord?(input: {
+    workspaceId: string;
+    caseId: string;
+    destination: DemoDownstreamDestination;
+  }): Promise<DemoDownstreamRecord | null>;
+  listDemoDownstreamRecordsForCase?(input: {
+    workspaceId: string;
+    caseId: string;
+  }): Promise<DemoDownstreamRecord[]>;
+  getDemoDownstreamRecordById?(
+    id: string,
+    workspaceId: string,
+  ): Promise<DemoDownstreamRecord | null>;
 }

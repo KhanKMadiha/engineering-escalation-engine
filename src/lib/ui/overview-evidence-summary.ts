@@ -56,6 +56,22 @@ function buildRecommendationExplanation(record: CaseRecord): string {
     .map((item) => item.description.trim())
     .filter(Boolean);
 
+  const unreproduced =
+    record.analysis?.aiResult.reproducibility === "not_reproduced";
+
+  if (result.recommendation === "insufficient_evidence") {
+    if (unreproduced) {
+      return "The reported failure has not been reproduced, and the available evidence is insufficient to determine whether Engineering involvement is needed.";
+    }
+    if (missing[0]) {
+      return shortenText(
+        `The available evidence is insufficient to determine whether Engineering involvement is needed. Outstanding evidence: ${missing[0]}.`,
+        240,
+      );
+    }
+    return defaultExplanationForRecommendation(result.recommendation);
+  }
+
   const parts: string[] = [];
 
   if (narrativeReasons[0]) {
@@ -64,13 +80,8 @@ function buildRecommendationExplanation(record: CaseRecord): string {
     parts.push(factorReasons[0]);
   }
 
-  if (result.recommendation === "insufficient_evidence" && missing[0]) {
-    parts.push(`Key gap: ${missing[0]}.`);
-  } else if (
-    result.recommendation === "continue_investigation" &&
-    missing[0]
-  ) {
-    parts.push(`Further evidence still needed: ${missing[0]}.`);
+  if (result.recommendation === "continue_investigation" && missing[0]) {
+    parts.push(`Further evidence is still needed (${missing[0]}).`);
   } else if (result.recommendation === "escalate" && established[0]) {
     parts.push(`Supported by validated evidence such as ${established[0]}.`);
   } else if (narrativeReasons[1]) {
@@ -114,10 +125,10 @@ function buildNextAction(record: CaseRecord): OverviewNextAction {
 
   if (approved) {
     return {
-      title: "Open Engineering handoff",
+      title: "Open Create escalation",
       summary:
-        "Escalation is approved. Review the handoff and create the Jira escalation or Rootly incident.",
-      actionLabel: "Open handoff",
+        "Escalation is approved. Review the prepared package and create a Jira issue or Rootly incident.",
+      actionLabel: "Open Create escalation",
       targetTab: "handoff",
     };
   }
@@ -128,9 +139,9 @@ function buildNextAction(record: CaseRecord): OverviewNextAction {
     !record.decision
   ) {
     return {
-      title: "Record human decision",
+      title: "Review Escalation approval",
       summary:
-        "Review the assessment if needed, then record your decision in the form below.",
+        "Review the Assessment, then open Escalation approval to record a human decision. AI cannot approve escalation.",
       actionLabel: "Open assessment",
       targetTab: "assessment",
     };
@@ -141,7 +152,7 @@ function buildNextAction(record: CaseRecord): OverviewNextAction {
       title: "Open Investigation",
       summary:
         record.analysis?.aiResult.recommendedNextSteps?.[0]?.trim() ||
-        "Gather the remaining evidence before reconsidering escalation.",
+        "Continue troubleshooting and review related support tickets, Jira issues, or previous incidents.",
       actionLabel: "Open investigation",
       targetTab: "investigation",
     };

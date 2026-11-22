@@ -2,19 +2,22 @@
 
 import { useCallback, useId, useState } from "react";
 import type { CaseTabId } from "@/components/cases/CaseWorkspaceTabs";
+import { ApprovalTab } from "@/components/cases/tabs/ApprovalTab";
 import { AssessmentTab } from "@/components/cases/tabs/AssessmentTab";
 import { HandoffTab } from "@/components/cases/tabs/HandoffTab";
 import { InvestigationTab } from "@/components/cases/tabs/InvestigationTab";
 import { OverviewTab } from "@/components/cases/tabs/OverviewTab";
 import { CaseWorkflowStepper } from "@/components/ui/Stepper";
 import {
+  isWorkflowStageAvailable,
   workflowStageForStatus,
   type WorkflowStage,
 } from "@/lib/ui/case-workflow-stages";
-import type { CaseRecord } from "@/types";
+import type { CaseRecord, DemoDownstreamRecord } from "@/types";
 
 type CaseWorkspaceProps = {
   record: CaseRecord;
+  existingDownstreamRecords?: DemoDownstreamRecord[];
 };
 
 /**
@@ -30,38 +33,70 @@ function tabToStage(tab: CaseTabId): WorkflowStage {
     case "assessment":
       return "Assessment";
     case "handoff":
-      return "Handoff";
+      return "Create escalation";
     default:
       return "Case details";
   }
+}
+
+function resolveAvailableStage(
+  stage: WorkflowStage,
+  record: CaseRecord,
+): WorkflowStage {
+  const recommendation = record.escalationResult?.recommendation ?? null;
+  if (isWorkflowStageAvailable(stage, record.status, recommendation)) {
+    return stage;
+  }
+  return workflowStageForStatus(record.status, recommendation);
 }
 
 /**
  * Case workspace: interactive five-step navigator replaces the tab bar.
  * Initial section follows current case status; changing sections is local UI
  * state only and does not mutate approval/handoff gates or case status.
+ * Unavailable stages cannot be selected through normal navigation.
  */
-export function CaseWorkspace({ record }: CaseWorkspaceProps) {
+export function CaseWorkspace({
+  record,
+  existingDownstreamRecords = [],
+}: CaseWorkspaceProps) {
+  const recommendation = record.escalationResult?.recommendation ?? null;
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>(() =>
-    // Open at the current relevant workflow stage (e.g. Investigation /
-    // Human decision / Handoff). Earlier completed stages remain navigable.
-    workflowStageForStatus(record.status),
+    resolveAvailableStage(
+      workflowStageForStatus(record.status, recommendation),
+      record,
+    ),
   );
   const panelId = useId();
 
-  const goToTab = useCallback((tab: CaseTabId) => {
-    setSelectedStage(tabToStage(tab));
-  }, []);
+  const selectStage = useCallback(
+    (stage: WorkflowStage) => {
+      setSelectedStage(resolveAvailableStage(stage, record));
+    },
+    [record],
+  );
 
-  const showOverview =
-    selectedStage === "Case details" || selectedStage === "Human decision";
+  const goToTab = useCallback(
+    (tab: CaseTabId) => {
+      selectStage(tabToStage(tab));
+    },
+    [selectStage],
+  );
+
+  const goToStage = useCallback(
+    (stage: WorkflowStage) => {
+      selectStage(stage);
+    },
+    [selectStage],
+  );
 
   return (
     <div className="space-y-5">
       <CaseWorkflowStepper
         status={record.status}
+        recommendation={recommendation}
         selectedStage={selectedStage}
-        onSelectStage={setSelectedStage}
+        onSelectStage={selectStage}
         panelId={panelId}
       />
 
@@ -71,17 +106,23 @@ export function CaseWorkspace({ record }: CaseWorkspaceProps) {
         aria-label={`${selectedStage} section`}
         className="pt-1"
       >
-        {showOverview ? (
+        {selectedStage === "Case details" ? (
           <OverviewTab record={record} goToTab={goToTab} />
         ) : null}
         {selectedStage === "Investigation" ? (
           <InvestigationTab record={record} />
         ) : null}
         {selectedStage === "Assessment" ? (
-          <AssessmentTab record={record} />
+          <AssessmentTab record={record} goToStage={goToStage} />
         ) : null}
-        {selectedStage === "Handoff" ? (
-          <HandoffTab record={record} />
+        {selectedStage === "Escalation approval" ? (
+          <ApprovalTab record={record} goToStage={goToStage} />
+        ) : null}
+        {selectedStage === "Create escalation" ? (
+          <HandoffTab
+            record={record}
+            existingDownstreamRecords={existingDownstreamRecords}
+          />
         ) : null}
       </div>
     </div>

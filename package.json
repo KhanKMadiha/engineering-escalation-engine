@@ -9,6 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:supabase:staging": "node scripts/run-phase3a-staging-tests.mjs",
+    "db:migrate:staging": "node scripts/apply-staging-migrations.mjs",
+    "preflight:production": "node scripts/production-preflight.mjs",
+    "seed:staging:phase3a": "node -r ./scripts/register-server-only.cjs --import tsx scripts/seed-staging-phase3a.ts",
     "seed:demo": "ALLOW_DEMO_SEED=1 tsx scripts/seed-demo.ts"
   },
   "dependencies": {

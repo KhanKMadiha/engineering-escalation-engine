@@ -44,6 +44,10 @@ export type SupportCaseRow = {
   status: CaseStatus;
   created_at: string;
   updated_at: string;
+  /** Present after demo workspace migration; NULL/absent = shared template. */
+  demo_workspace_id?: string | null;
+  /** Template case id when this row is a copy-on-write fork. */
+  cloned_from_case_id?: string | null;
 };
 
 export type CaseAnalysisRow = {
@@ -58,6 +62,8 @@ export type CaseAnalysisRow = {
   model: string;
   prompt_version: string;
   created_at: string;
+  assessment_version?: number | null;
+  is_current?: boolean | null;
 };
 
 export type EscalationResultRow = {
@@ -69,6 +75,8 @@ export type EscalationResultRow = {
   recommendation_reasons: string[];
   source: "deterministic_engine";
   created_at: string;
+  assessment_version?: number | null;
+  is_current?: boolean | null;
 };
 
 export type HumanDecisionRow = {
@@ -81,6 +89,11 @@ export type HumanDecisionRow = {
   escalation_score_at_decision: number;
   recommendation_at_decision: EscalationRecommendation;
   source: "human_decision";
+  assessment_version?: number | null;
+  is_exception?: boolean | null;
+  exception_reason?: string | null;
+  /** Present after demo workspace migration. */
+  is_simulated?: boolean | null;
 };
 
 export type EngineeringHandoffRow = {
@@ -106,6 +119,9 @@ export type EngineeringHandoffRow = {
   decision_rationale: string;
   created_at: string;
   source: "engineering_handoff";
+  /** Present after demo workspace migration. */
+  is_simulated?: boolean | null;
+  decision_id?: string | null;
 };
 
 export type CaseEventRow = {
@@ -232,6 +248,8 @@ export function analysisToRow(
     model: analysis.model,
     prompt_version: analysis.promptVersion,
     created_at: analysis.createdAt,
+    assessment_version: analysis.assessmentVersion ?? 1,
+    is_current: analysis.isCurrent ?? true,
   };
 }
 
@@ -247,6 +265,8 @@ export function analysisFromRow(row: CaseAnalysisRow): StoredAnalysis {
     model: row.model,
     promptVersion: row.prompt_version,
     createdAt: toIso(row.created_at),
+    assessmentVersion: row.assessment_version ?? 1,
+    isCurrent: row.is_current !== false,
   };
 }
 
@@ -263,6 +283,8 @@ export function escalationResultToRow(
     contributing_factors: result.contributingFactors,
     recommendation_reasons: result.recommendationReasons,
     source: result.source,
+    assessment_version: result.assessmentVersion ?? 1,
+    is_current: result.isCurrent ?? true,
   };
 }
 
@@ -275,6 +297,8 @@ export function escalationResultFromRow(
     contributingFactors: row.contributing_factors ?? [],
     recommendationReasons: row.recommendation_reasons ?? [],
     source: "deterministic_engine",
+    assessmentVersion: row.assessment_version ?? 1,
+    isCurrent: row.is_current ?? true,
   };
 }
 
@@ -289,6 +313,10 @@ export function humanDecisionToRow(decision: HumanDecision): HumanDecisionRow {
     escalation_score_at_decision: decision.escalationScoreAtDecision,
     recommendation_at_decision: decision.recommendationAtDecision,
     source: decision.source,
+    assessment_version: decision.assessmentVersion ?? 1,
+    is_exception: decision.isException ?? false,
+    exception_reason: decision.exceptionReason ?? null,
+    is_simulated: decision.isSimulated ?? false,
   };
 }
 
@@ -303,6 +331,10 @@ export function humanDecisionFromRow(row: HumanDecisionRow): HumanDecision {
     escalationScoreAtDecision: row.escalation_score_at_decision,
     recommendationAtDecision: row.recommendation_at_decision,
     source: "human_decision",
+    assessmentVersion: row.assessment_version ?? 1,
+    isException: row.is_exception ?? false,
+    exceptionReason: row.exception_reason ?? null,
+    isSimulated: row.is_simulated ?? false,
   };
 }
 
@@ -330,6 +362,8 @@ export function handoffToRow(handoff: EscalationHandoff): EngineeringHandoffRow 
     decision_rationale: handoff.decisionRationale,
     created_at: handoff.createdAt,
     source: handoff.source,
+    is_simulated: handoff.isSimulated ?? false,
+    decision_id: handoff.decisionId ?? null,
   };
 }
 
@@ -357,6 +391,8 @@ export function handoffFromRow(row: EngineeringHandoffRow): EscalationHandoff {
     decisionRationale: row.decision_rationale,
     createdAt: toIso(row.created_at),
     source: "engineering_handoff",
+    isSimulated: row.is_simulated ?? false,
+    decisionId: row.decision_id ?? null,
   };
 }
 
@@ -414,6 +450,8 @@ export function assembleCaseRecord(parts: {
   const supportCase = supportCaseFromRow(parts.caseRow);
   return {
     ...supportCase,
+    demoWorkspaceId: parts.caseRow.demo_workspace_id ?? null,
+    clonedFromCaseId: parts.caseRow.cloned_from_case_id ?? null,
     analysis: parts.analysis ? analysisFromRow(parts.analysis) : undefined,
     escalationResult: parts.escalation
       ? escalationResultFromRow(parts.escalation)
@@ -435,6 +473,9 @@ export function decisionToRpcPayload(decision: HumanDecision): Record<string, un
     escalationScoreAtDecision: decision.escalationScoreAtDecision,
     recommendationAtDecision: decision.recommendationAtDecision,
     source: decision.source,
+    ...(decision.isSimulated !== undefined
+      ? { isSimulated: decision.isSimulated }
+      : {}),
   };
 }
 
@@ -463,6 +504,10 @@ export function handoffToRpcPayload(
     decisionRationale: handoff.decisionRationale,
     createdAt: handoff.createdAt,
     source: handoff.source,
+    ...(handoff.isSimulated !== undefined
+      ? { isSimulated: handoff.isSimulated }
+      : {}),
+    ...(handoff.decisionId ? { decisionId: handoff.decisionId } : {}),
   };
 }
 

@@ -7,13 +7,16 @@ import {
 } from "react";
 import {
   WORKFLOW_STAGES,
+  isWorkflowStageAvailable,
   workflowStageIndex,
+  workflowStageUnavailableReason,
   type WorkflowStage,
 } from "@/lib/ui/case-workflow-stages";
-import type { CaseStatus } from "@/types";
+import type { CaseStatus, EscalationRecommendation } from "@/types";
 
 type StepperProps = {
   status: CaseStatus;
+  recommendation?: EscalationRecommendation | null;
   /** Section currently being viewed (local UI state only). */
   selectedStage: WorkflowStage;
   onSelectStage: (stage: WorkflowStage) => void;
@@ -24,52 +27,84 @@ type StepperProps = {
 
 /**
  * Interactive workflow navigator.
- * Desktop: horizontal step list. Mobile: compact select of all five stages.
- * Selected stage is local view state — does not mutate domain workflow.
+ * Desktop: horizontal step list. Mobile: compact select of available stages.
+ * Unavailable stages stay visible but disabled. Selection is local view state.
  */
 export function CaseWorkflowStepper({
   status,
+  recommendation = null,
   selectedStage,
   onSelectStage,
   panelId,
   className = "",
 }: StepperProps) {
-  const activeIndex = workflowStageIndex(status);
+  const activeIndex = workflowStageIndex(status, recommendation);
   const stages = WORKFLOW_STAGES as readonly WorkflowStage[];
   const selectedIndex = stages.indexOf(selectedStage);
   const baseId = useId();
   const selectId = `${baseId}-mobile-select`;
 
+  function selectIfAvailable(stage: WorkflowStage) {
+    if (!isWorkflowStageAvailable(stage, status, recommendation)) {
+      return;
+    }
+    onSelectStage(stage);
+  }
+
+  function nextAvailableIndex(from: number, direction: 1 | -1): number {
+    const last = stages.length - 1;
+    let index = from;
+    for (let step = 0; step < stages.length; step += 1) {
+      index = index + direction;
+      if (index < 0) index = last;
+      if (index > last) index = 0;
+      const stage = stages[index];
+      if (stage && isWorkflowStageAvailable(stage, status, recommendation)) {
+        return index;
+      }
+    }
+    return from;
+  }
+
   function onStepKeyDown(
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
   ) {
-    const last = stages.length - 1;
     let next = index;
     if (event.key === "ArrowRight") {
-      next = index === last ? 0 : index + 1;
+      next = nextAvailableIndex(index, 1);
     } else if (event.key === "ArrowLeft") {
-      next = index === 0 ? last : index - 1;
+      next = nextAvailableIndex(index, -1);
     } else if (event.key === "Home") {
-      next = 0;
+      next = stages.findIndex((stage) =>
+        isWorkflowStageAvailable(stage, status, recommendation),
+      );
+      if (next < 0) return;
     } else if (event.key === "End") {
-      next = last;
+      for (let i = stages.length - 1; i >= 0; i -= 1) {
+        const stage = stages[i];
+        if (stage && isWorkflowStageAvailable(stage, status, recommendation)) {
+          next = i;
+          break;
+        }
+      }
     } else {
       return;
     }
     event.preventDefault();
     const stage = stages[next];
-    onSelectStage(stage);
+    if (!stage) return;
+    selectIfAvailable(stage);
     document.getElementById(`${baseId}-step-${stage}`)?.focus();
   }
 
   function onMobileSelect(event: ChangeEvent<HTMLSelectElement>) {
-    onSelectStage(event.target.value as WorkflowStage);
+    selectIfAvailable(event.target.value as WorkflowStage);
   }
 
   return (
     <div className={`w-full ${className}`.trim()}>
-      {/* Compact mobile selector — all five stages discoverable without overflow */}
+      {/* Compact mobile selector — unavailable stages remain listed but disabled */}
       <div className="sm:hidden">
         <label htmlFor={selectId} className="sr-only">
           Case workflow section
@@ -94,11 +129,25 @@ export function CaseWorkflowStepper({
             aria-controls={panelId}
             className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
           >
-            {stages.map((stage) => (
-              <option key={stage} value={stage}>
-                {stage}
-              </option>
-            ))}
+            {stages.map((stage) => {
+              const available = isWorkflowStageAvailable(
+                stage,
+                status,
+                recommendation,
+              );
+              const reason = workflowStageUnavailableReason(
+                stage,
+                status,
+                recommendation,
+              );
+              return (
+                <option key={stage} value={stage} disabled={!available}>
+                  {available
+                    ? stage
+                    : `${stage} (unavailable${reason ? ` — ${reason}` : ""})`}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
@@ -117,6 +166,16 @@ export function CaseWorkflowStepper({
             const complete = index < activeIndex;
             const statusCurrent = index === activeIndex;
             const selected = index === selectedIndex;
+            const available = isWorkflowStageAvailable(
+              stage,
+              status,
+              recommendation,
+            );
+            const unavailableReason = workflowStageUnavailableReason(
+              stage,
+              status,
+              recommendation,
+            );
             const stepNumber = String(index + 1);
 
             return (
@@ -134,32 +193,42 @@ export function CaseWorkflowStepper({
                   aria-selected={selected}
                   aria-controls={panelId}
                   aria-current={statusCurrent ? "step" : undefined}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => onSelectStage(stage)}
+                  aria-disabled={!available}
+                  disabled={!available}
+                  title={unavailableReason ?? undefined}
+                  tabIndex={selected && available ? 0 : -1}
+                  onClick={() => selectIfAvailable(stage)}
                   onKeyDown={(event) => onStepKeyDown(event, index)}
                   className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-                    selected
-                      ? "bg-subtle text-foreground ring-1 ring-inset ring-border"
-                      : "text-muted hover:bg-subtle/70 hover:text-foreground"
+                    !available
+                      ? "cursor-not-allowed text-muted/70"
+                      : selected
+                        ? "bg-subtle text-foreground ring-1 ring-inset ring-border"
+                        : "text-muted hover:bg-subtle/70 hover:text-foreground"
                   }`}
                 >
                   <span
                     aria-hidden
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                      complete
-                        ? "bg-success text-white"
-                        : selected
-                          ? "bg-accent text-accent-foreground"
-                          : statusCurrent
-                            ? "bg-subtle text-foreground ring-1 ring-inset ring-border"
-                            : "bg-subtle text-muted"
+                      !available
+                        ? "bg-subtle text-muted/70 ring-1 ring-inset ring-border"
+                        : complete
+                          ? "bg-success text-white"
+                          : selected
+                            ? "bg-accent text-accent-foreground"
+                            : statusCurrent
+                              ? "bg-subtle text-foreground ring-1 ring-inset ring-border"
+                              : "bg-subtle text-muted"
                     }`}
                   >
-                    {complete ? "✓" : stepNumber}
+                    {complete && available ? "✓" : stepNumber}
                   </span>
                   <span>{stage}</span>
                   {statusCurrent ? (
                     <span className="sr-only"> (current case status)</span>
+                  ) : null}
+                  {!available && unavailableReason ? (
+                    <span className="sr-only"> — {unavailableReason}</span>
                   ) : null}
                 </button>
               </li>

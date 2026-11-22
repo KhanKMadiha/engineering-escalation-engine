@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { caseDetailTwoColumnGridClassName } from "@/components/cases/CaseDetailTwoColumnLayout";
 import { HandoffTab } from "@/components/cases/tabs/HandoffTab";
 import {
   buildDemoJiraKey,
@@ -8,6 +7,7 @@ import {
   canCreateDownstreamDemo,
   createDemoJiraEscalation,
   createDemoRootlyIncident,
+  selectProminentEvidence,
   severityToJiraPriority,
 } from "@/lib/demo/downstream-demo";
 import type {
@@ -156,19 +156,27 @@ describe("downstream demo adapters", () => {
   });
 
   it("builds Jira preview from existing handoff data without inventing facts", () => {
-    const result = createDemoJiraEscalation(handoff);
+    const result = createDemoJiraEscalation(handoff, {
+      product: "API v3",
+      customer: "[DEMO] Acme Corp",
+    });
     expect(result.demo).toBe(true);
     expect(result.simulated).toBe(true);
     expect(result.key).toBe(buildDemoJiraKey(handoff.caseId, handoff.id));
     expect(result.priority).toBe(severityToJiraPriority("high"));
-    expect(result.type).toBe("Bug");
+    expect(result.type).toBe("Engineering investigation");
+    expect(result.preview.issueType).toBe("Engineering investigation");
     expect(result.preview.summary).toBe("Intermittent 500 errors");
+    expect(result.preview.customer).toBe("Acme Corp");
+    expect(result.preview.product).toBe("API v3");
     expect(result.preview.environment).toBe("production");
     expect(result.preview.affectedCustomers).toBe("3");
-    expect(result.preview.decisionRationale).toBe(handoff.decisionRationale);
     expect(result.preview.evidence[0]).toContain("HTTP status: 500");
-    expect(result.preview.description).toContain(handoff.summary);
-    expect(result.preview.description).not.toContain("[DEMO]");
+    expect(result.preview.description).toContain(handoff.actualBehaviour);
+    expect(result.preview.description).not.toContain("Expected behaviour:");
+    expect(result.preview.expectedBehaviour).toBe(handoff.expectedBehaviour);
+    expect(result.preview.reproductionSteps).toContain("Call API");
+    expect(result.preview.workaround).toBe("Not recorded");
     expect(result.preview.summary).not.toContain("[DEMO]");
   });
 
@@ -176,29 +184,41 @@ describe("downstream demo adapters", () => {
     const sparse: EscalationHandoff = {
       ...handoff,
       expectedBehaviour: "",
+      actualBehaviour: "",
+      summary: "",
       affectedCustomerCount: null,
       evidence: [],
       customerImpact: "",
+      reproducibility: "unknown",
+      stepsToReproduce: "",
     };
     const jira = createDemoJiraEscalation(sparse);
-    expect(jira.preview.affectedCustomers).toBe("Not provided");
-    expect(jira.preview.evidence).toEqual(["Not provided"]);
-    expect(jira.preview.description).toContain("Not provided");
+    expect(jira.preview.affectedCustomers).toBe("Not recorded");
+    expect(jira.preview.evidence).toEqual([]);
+    expect(jira.preview.reproductionSteps).toBeNull();
+    expect(jira.preview.expectedBehaviour).toBe("Not provided");
 
-    const rootly = createDemoRootlyIncident(sparse);
-    expect(rootly.preview.impact).toBe("Not provided");
-    expect(rootly.preview.affectedCustomers).toBe("Not provided");
+    const rootly = createDemoRootlyIncident(sparse, null, {});
+    expect(rootly.preview.customerImpact).toBe("Not provided");
+    expect(rootly.preview.responseTeam).toBeNull();
+    expect(rootly.preview.issueStartTime).toBeNull();
   });
 
-  it("builds Rootly preview and optional local Jira cross-reference", () => {
-    const jira = createDemoJiraEscalation(handoff);
-    const rootly = createDemoRootlyIncident(handoff, jira.key);
+  it("builds Rootly preview from recorded case context without inventing status", () => {
+    const rootly = createDemoRootlyIncident(handoff, null, {
+      product: "API v3",
+      customer: "[DEMO] Acme Corp",
+      incidentTimestamp: "2026-09-08T09:14:32.000Z",
+    });
     expect(rootly.id).toBe(buildDemoRootlyId(handoff.caseId, handoff.id));
-    expect(rootly.status).toBe("Active");
     expect(rootly.severity).toBe("high");
     expect(rootly.preview.title).toBe("Intermittent 500 errors");
+    expect(rootly.preview.affectedService).toBe("API v3");
+    expect(rootly.preview.currentSituation).toContain("HTTP 500");
+    expect(rootly.preview.customerImpact).toContain("Acme Corp");
+    expect(rootly.preview.issueStartTime).toBeTruthy();
+    expect(rootly.preview.responseTeam).toBeNull();
     expect(rootly.preview.title).not.toContain("[DEMO]");
-    expect(rootly.preview.linkedEngineeringEscalation).toBe(jira.key);
   });
 
   it("does not perform network requests when creating demo results", () => {
@@ -219,39 +239,59 @@ describe("downstream demo adapters", () => {
     expect(escalation.escalationScore).toBe(98);
     expect(escalation.recommendation).toBe("escalate");
   });
+
+  it("selects up to three non-duplicative diagnostic artefacts for prominence", () => {
+    const lines = [
+      "HTTP 504 in logs: HTTP status: 504",
+      "Gateway Timeout: Error: Gateway Timeout",
+      "504 request ID: req-demo-504-6618",
+      "Intermittent 504 behaviour: intermittently return HTTP 504",
+      "Description notes latency spikes: Upstream latency spikes",
+      "HTTP 504 again: HTTP status: 504",
+    ];
+    const { prominent, remaining } = selectProminentEvidence(lines, 3);
+    expect(prominent.length).toBeLessThanOrEqual(3);
+    expect(prominent.some((l) => /HTTP status: 504/i.test(l))).toBe(true);
+    expect(prominent.some((l) => /req-demo-504-6618/i.test(l))).toBe(true);
+    expect(remaining.length).toBe(lines.length - prominent.length);
+    expect(lines).toEqual(expect.arrayContaining([...prominent, ...remaining]));
+  });
 });
 
-describe("handoff UI downstream gating", () => {
+describe("Create escalation UI downstream gating", () => {
   it("does not expose Jira/Rootly create actions before approval", () => {
     const html = renderToStaticMarkup(<HandoffTab record={awaitingRecord} />);
-    expect(html).toContain("Awaiting human approval");
-    expect(html).toContain("Available after approval");
-    expect(html).not.toContain("Create Jira escalation");
+    expect(html).toContain("Create escalation");
+    expect(html).toContain(
+      "Create escalation becomes available after escalation is approved.",
+    );
+    expect(html).not.toContain("Create Jira issue");
     expect(html).not.toContain("Create Rootly incident");
   });
 
-  it("does not expose downstream actions when investigation continues", () => {
+  it("does not expose destination actions when investigation continues", () => {
     const html = renderToStaticMarkup(<HandoffTab record={rejectedRecord} />);
-    expect(html).toContain("Continue investigation");
-    expect(html).toContain(caseDetailTwoColumnGridClassName);
-    expect(html).not.toContain("Escalation rejected");
-    expect(html).not.toContain("Create Jira escalation");
+    expect(html).toContain("Create escalation");
+    expect(html).toContain("Investigation is continuing");
+    expect(html).not.toContain("Create Jira issue");
     expect(html).not.toContain("Create Rootly incident");
   });
 
-  it("exposes Jira and Rootly actions after approval", () => {
+  it("exposes Jira and Rootly create actions after approval", () => {
     const html = renderToStaticMarkup(<HandoffTab record={approvedRecord} />);
-    expect(html).toContain("✓ Approved");
-    expect(html).not.toContain("Escalation approved");
-    expect(html).toContain("Ready for Engineering");
-    expect(html).toContain("Handoff document");
-    expect(html).toContain("Copy handoff");
-    expect(html).toContain("Create Jira escalation");
+    expect(html).toContain("Escalation approved");
+    expect(html).toContain("Create escalation");
+    expect(html).toContain("Prepared escalation");
+    expect(html).toContain("Create Jira issue");
     expect(html).toContain("Create Rootly incident");
-    expect(html).toContain("Demo integration");
-    expect(html).toContain("Simulated only. No external systems are contacted.");
+    expect(html).toContain("Reason for escalation");
+    expect(html).toContain(">Decision<");
+    expect(html).toContain("Outcome");
+    expect(html).not.toContain("Create destination record");
+    expect(html).not.toContain("Copy handoff");
     expect(html).not.toContain("Choose the action that fits the situation");
-    expect(html).not.toContain("Open in Jira");
-    expect(html).not.toContain("Open in Rootly");
+    // Success copy appears only after confirm — not on the landing screen.
+    expect(html).not.toContain("Simulated Jira issue created");
+    expect(html).not.toContain("Simulated Rootly incident created");
   });
 });

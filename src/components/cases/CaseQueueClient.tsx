@@ -225,13 +225,6 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             Review incoming cases, track investigations and manage Engineering
             escalations.
           </p>
-          <p className="pt-0.5 text-sm text-muted">
-            <span className="font-medium text-foreground">Demo environment</span>
-            <span className="text-border"> · </span>
-            <span>
-              All cases shown are fictional and contain no real customer data.
-            </span>
-          </p>
         </div>
         <Link href="/cases/new" className="shrink-0">
           <Button variant="primary" size="lg">
@@ -336,6 +329,8 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
           ) : null}
         </div>
 
+        <CaseListTable cases={filtered} />
+
         <p className="text-sm text-muted">
           Showing{" "}
           <span className="font-medium text-foreground">{filtered.length}</span>
@@ -343,8 +338,6 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
           <span className="font-medium text-foreground">{cases.length}</span>
           {" cases"}
         </p>
-
-        <CaseListTable cases={filtered} />
       </div>
     </div>
   );

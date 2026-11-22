@@ -46,6 +46,8 @@ export type RecordHumanDecisionInput = {
   decision: "approved" | "rejected";
   rationale: string;
   decidedBy?: string;
+  /** Portfolio visitor simulated decision (Approach D). */
+  isSimulated?: boolean;
 };
 
 export type RecordHumanDecisionResult = {
@@ -84,13 +86,14 @@ export class DecisionService {
     }
 
     const data: SubmitHumanDecisionInput = validation.data;
+    const isSimulated = Boolean(input.isSimulated);
 
     if (!tryAcquireDecisionLock(data.caseId)) {
       throw new DecisionInProgressError(data.caseId);
     }
 
     try {
-      return await this.recordDecisionLocked(data);
+      return await this.recordDecisionLocked(data, isSimulated);
     } finally {
       releaseDecisionLock(data.caseId);
     }
@@ -98,6 +101,7 @@ export class DecisionService {
 
   private async recordDecisionLocked(
     data: SubmitHumanDecisionInput,
+    isSimulated: boolean,
   ): Promise<RecordHumanDecisionResult> {
     const record = await this.caseService.getCaseById(data.caseId);
 
@@ -115,6 +119,20 @@ export class DecisionService {
       throw new MissingEscalationResultError(data.caseId);
     }
 
+    // Ordinary approval workflow is only for escalate recommendations.
+    // Continue / insufficient-evidence cases stay in investigation without
+    // requiring a human decision. Exception approvals remain deferred.
+    if (record.escalationResult.recommendation !== "escalate") {
+      throw new DecisionNotEligibleError(
+        `Ordinary human decisions are only allowed when the engine recommends escalation (got "${record.escalationResult.recommendation}").`,
+      );
+    }
+
+    const assessmentVersion =
+      record.currentAssessmentVersion ??
+      record.analysis?.assessmentVersion ??
+      1;
+
     const decision: HumanDecision = {
       id: crypto.randomUUID(),
       caseId: data.caseId,
@@ -125,6 +143,10 @@ export class DecisionService {
       escalationScoreAtDecision: record.escalationResult.escalationScore,
       recommendationAtDecision: record.escalationResult.recommendation,
       source: "human_decision",
+      assessmentVersion,
+      isException: false,
+      exceptionReason: null,
+      isSimulated,
     };
 
     const decisionEvent = createCaseEvent({
@@ -148,6 +170,11 @@ export class DecisionService {
 
     if (data.decision === "approved") {
       handoff = generateEngineeringHandoffFromRecord(record, decision);
+      handoff = {
+        ...handoff,
+        decisionId: decision.id,
+        isSimulated,
+      };
       events.push(
         createCaseEvent({
           caseId: data.caseId,
@@ -155,6 +182,7 @@ export class DecisionService {
           metadata: {
             handoffId: handoff.id,
             decisionId: decision.id,
+            isSimulated,
           },
         }),
       );
@@ -175,6 +203,7 @@ export class DecisionService {
         handoff,
         targetStatus,
         events,
+        expectedAssessmentVersion: assessmentVersion,
       });
     } catch (error) {
       if (

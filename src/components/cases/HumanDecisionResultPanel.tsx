@@ -9,7 +9,7 @@ type HumanDecisionResultPanelProps = {
 };
 
 /**
- * Human decision summary for Overview.
+ * Recorded Escalation approval summary for Overview.
  * Presentation only — does not alter stored decision values.
  */
 export function HumanDecisionResultPanel({
@@ -27,7 +27,7 @@ export function HumanDecisionResultPanel({
       : "Escalation rejected";
 
   return (
-    <WorkflowSection title="Human decision">
+    <WorkflowSection title="Escalation approval">
       <div
         className={`inline-flex rounded border px-3 py-2 text-sm font-semibold ${
           approved
@@ -43,7 +43,7 @@ export function HumanDecisionResultPanel({
 
       <dl className="mt-4 grid max-w-2xl gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-slate-500">Decided by</dt>
+          <dt className="text-xs text-slate-500">Recorded by</dt>
           <dd className="font-medium text-slate-900">
             {formatDecidedByLabel(decision.decidedBy)}
           </dd>

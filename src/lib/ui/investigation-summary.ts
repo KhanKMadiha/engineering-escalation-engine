@@ -3,9 +3,10 @@ import {
   shortenText,
   troubleshootingSummaryLines,
 } from "@/lib/ui/case-display";
+import { displayLifecycleStatus } from "@/lib/ui/case-lifecycle-presentation";
 import { stripDemoDescriptionBoilerplate } from "@/lib/demo/demo-cases";
 import { formatDateTime, formatIssueFirstObserved } from "@/lib/format";
-import type { CaseRecord } from "@/types";
+import type { CaseRecord, EscalationRecommendation } from "@/types";
 
 export type ImpactTimelineProvenance =
   | "system"
@@ -242,6 +243,20 @@ export function establishedWorkaround(record: CaseRecord): string | null {
 }
 
 /**
+ * Presentation label for Workaround.
+ * "N/A" is reserved for a confirmed not-applicable state (none today).
+ * Unidentified workarounds use "Not identified" rather than implying N/A.
+ */
+export function workaroundDisplayLabel(
+  workaround: string | null,
+): { label: string; recorded: boolean } {
+  if (workaround?.trim()) {
+    return { label: workaround.trim(), recorded: true };
+  }
+  return { label: "Not identified", recorded: false };
+}
+
+/**
  * Compact Impact & timeline for the mockup grid.
  * Never infers affected users from affected organisations.
  * Impact scope is omitted from presentation (org count already shown).
@@ -270,6 +285,7 @@ export function buildImpactTimeline(record: CaseRecord): ImpactTimeline {
       provenance: issueStarted ? "customer_support" : "not_recorded",
     },
     issueFrequencyRow(record),
+    investigationReproducibilityRow(record),
     {
       label: "Affected users",
       value: "Not recorded",
@@ -341,7 +357,122 @@ export function impactScopeFromCustomerCount(
 }
 
 /**
- * @deprecated Prefer issueFrequencyRow for Impact & timeline.
+ * Support-facing reproducibility for Impact & timeline.
+ * Prefers recorded investigation text over AI category alone.
+ * Does not treat a customer report as confirmed reproduction.
+ */
+export type InvestigationReproducibilityLabel =
+  | "Reproduced"
+  | "Unable to reproduce"
+  | "Not attempted"
+  | "Intermittently reproducible"
+  | "Unknown";
+
+export function investigationReproducibilityRow(
+  record: CaseRecord,
+): ImpactTimelineRow {
+  const troubleshooting = record.troubleshootingPerformed ?? "";
+  const steps = record.stepsToReproduce ?? "";
+  const combined = `${troubleshooting}\n${steps}`;
+
+  if (
+    /\breproduced the issue\b/i.test(troubleshooting) ||
+    /\breproduced (?:it|this|the failure|the problem)\b/i.test(troubleshooting) ||
+    /\bconfirmed (?:reproduction|reproducibility)\b/i.test(troubleshooting)
+  ) {
+    return {
+      label: "Reproducibility",
+      value: "Reproduced",
+      provenance: "customer_support",
+    };
+  }
+
+  if (
+    /\bintermittent(?:ly)? reproducible\b/i.test(combined) ||
+    (/\breproduc(?:ed|ible|tion)\b/i.test(troubleshooting) &&
+      /\bintermittent\b/i.test(troubleshooting))
+  ) {
+    return {
+      label: "Reproducibility",
+      value: "Intermittently reproducible",
+      provenance: "customer_support",
+    };
+  }
+
+  if (
+    /\bunable to reproduce\b/i.test(combined) ||
+    /\bcould not reproduce\b/i.test(combined) ||
+    /\bfailed to reproduce\b/i.test(combined) ||
+    /\battempt(?:ed)? to reproduce\b/i.test(combined)
+  ) {
+    return {
+      label: "Reproducibility",
+      value: "Unable to reproduce",
+      provenance: "customer_support",
+    };
+  }
+
+  const aiValue = record.analysis?.aiResult.reproducibility?.trim();
+  if (aiValue === "confirmed") {
+    // AI alone is not enough to claim Support-confirmed reproduction.
+    return {
+      label: "Reproducibility",
+      value: "Unknown",
+      provenance: "not_recorded",
+    };
+  }
+  if (aiValue === "intermittent") {
+    return {
+      label: "Reproducibility",
+      value: "Intermittently reproducible",
+      provenance: "ai_interpretation",
+    };
+  }
+  if (aiValue === "not_reproduced") {
+    // Without an explicit unsuccessful attempt, treat as not attempted.
+    return {
+      label: "Reproducibility",
+      value: "Not attempted",
+      provenance: "customer_support",
+    };
+  }
+
+  return {
+    label: "Reproducibility",
+    value: "Unknown",
+    provenance: "not_recorded",
+  };
+}
+
+/** Maps stored handoff / analysis reproducibility to Support terminology. */
+export function supportReproducibilityLabel(
+  raw: string | null | undefined,
+): string {
+  const value = raw?.trim().toLowerCase() ?? "";
+  if (!value || value === "not established" || value === "unknown") {
+    return "Unknown";
+  }
+  if (value === "confirmed" || value === "reproduced") {
+    return "Reproduced";
+  }
+  if (value === "intermittent" || value === "intermittently reproducible") {
+    return "Intermittently reproducible";
+  }
+  if (
+    value === "not_reproduced" ||
+    value === "not reproduced" ||
+    value === "unable to reproduce"
+  ) {
+    return "Unable to reproduce";
+  }
+  if (value === "not attempted") {
+    return "Not attempted";
+  }
+  return raw!.replaceAll("_", " ");
+}
+
+/**
+ * @deprecated Prefer investigationReproducibilityRow for Impact & timeline.
  * Kept for callers that still map AI reproducibility labels.
  */
 export function reproductionStatusDisplay(
@@ -488,8 +619,15 @@ export function correlationReferenceDisplay(
 
 export function investigationProgressLabel(
   status: CaseRecord["status"],
+  recommendation?: EscalationRecommendation | null,
 ): string | null {
-  switch (status) {
+  // Align with queue/header display mapping so legacy awaiting_decision +
+  // insufficient/continue recommendations do not show "Awaiting decision".
+  const display = displayLifecycleStatus({
+    status,
+    escalationRecommendation: recommendation ?? null,
+  });
+  switch (display) {
     case "analyzing":
     case "investigation_continues":
       return "In progress";
