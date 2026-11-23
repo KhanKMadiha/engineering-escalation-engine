@@ -8,7 +8,6 @@ import {
   formatCaseKey,
   formatRecommendationLabel,
 } from "@/lib/ui/case-display";
-import { demoCaseOwnershipLabel } from "@/lib/ui/demo-case-labels";
 import type { SupportCaseSummary } from "@/types";
 
 type CaseListTableProps = {
