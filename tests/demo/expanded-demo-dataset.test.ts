@@ -89,8 +89,9 @@ describe("expanded demo dataset", () => {
     const continues = listed.filter(
       (item) => item.status === "investigation_continues",
     );
-    expect(pending.length).toBeGreaterThanOrEqual(2);
-    expect(handoffs.length).toBeGreaterThanOrEqual(2);
+    // Orchid remains the ordinary pending escalate review; Vertex is pre-approved.
+    expect(pending.length).toBeGreaterThanOrEqual(1);
+    expect(handoffs.length).toBeGreaterThanOrEqual(3);
     expect(continues.length).toBeGreaterThanOrEqual(2);
 
     for (const definition of DEMO_CASE_DEFINITIONS) {

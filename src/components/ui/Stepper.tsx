@@ -199,11 +199,11 @@ export function CaseWorkflowStepper({
                   tabIndex={selected && available ? 0 : -1}
                   onClick={() => selectIfAvailable(stage)}
                   onKeyDown={(event) => onStepKeyDown(event, index)}
-                  className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
                     !available
                       ? "cursor-not-allowed text-muted/70"
                       : selected
-                        ? "bg-subtle text-foreground ring-1 ring-inset ring-border"
+                        ? "bg-accent-soft text-foreground ring-1 ring-inset ring-[#b8ddd4]"
                         : "text-muted hover:bg-subtle/70 hover:text-foreground"
                   }`}
                 >

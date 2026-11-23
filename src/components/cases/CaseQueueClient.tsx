@@ -23,6 +23,7 @@ import {
 import { CaseListTable } from "@/components/cases/CaseListTable";
 import { AppIcon, ICON_SIZE_NAV } from "@/components/ui/AppIcon";
 import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { buildCaseQueueStats } from "@/lib/ui/case-queue-stats";
 import {
@@ -98,7 +99,7 @@ const REPORTED_OPTIONS: { value: ReportedDateRange; label: string }[] = [
 ];
 
 const controlClass =
-  "h-9 rounded-md border border-border bg-surface text-sm text-foreground outline-none transition-colors hover:border-[#d0d5dd] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1";
+  "h-9 rounded-md border border-border bg-surface text-sm text-foreground outline-none transition-colors hover:border-[#d1d5db] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1";
 
 type SelectOption = { value: string; label: string };
 
@@ -130,9 +131,7 @@ function ToolbarSelect({
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange(event.target.value)
         }
-        className={`${controlClass} ${
-          fullWidth ? "w-full" : "w-full"
-        } cursor-pointer appearance-none py-0 pl-3 pr-9`}
+        className={`${controlClass} w-full cursor-pointer appearance-none py-0 pl-3 pr-8`}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -163,6 +162,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
   const [reportedRange, setReportedRange] =
     useState<ReportedDateRange>("all");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const stats = useMemo(() => buildCaseQueueStats(cases), [cases]);
 
@@ -195,6 +195,12 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
   ]);
 
   const moreActiveCount = recommendation !== "all" ? 1 : 0;
+  const secondaryActiveCount =
+    (status !== "all" ? 1 : 0) +
+    (severity !== "all" ? 1 : 0) +
+    (environment !== "all" ? 1 : 0) +
+    (reportedRange !== "all" ? 1 : 0) +
+    moreActiveCount;
 
   const hasActiveFilters =
     query.trim() !== "" ||
@@ -212,33 +218,29 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
     setReportedRange("all");
     setRecommendation("all");
     setMoreOpen(false);
+    setMobileFiltersOpen(false);
   }
 
   return (
-    <div className="space-y-7">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Case queue
-          </h1>
-          <p className="max-w-3xl text-[15px] text-muted">
-            Review incoming cases, track investigations and manage Engineering
-            escalations.
-          </p>
-        </div>
-        <Link href="/cases/new" className="shrink-0">
-          <Button variant="primary" size="lg">
-            <AppIcon
-              icon={CirclePlus}
-              size={ICON_SIZE_NAV}
-              className="text-accent-foreground"
-            />
-            New case
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        title="Case queue"
+        description="Review incoming cases, track investigations and manage Engineering escalations."
+        actions={
+          <Link href="/cases/new" className="shrink-0">
+            <Button variant="primary" size="md">
+              <AppIcon
+                icon={CirclePlus}
+                size={ICON_SIZE_NAV}
+                className="text-accent-foreground"
+              />
+              New case
+            </Button>
+          </Link>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatCard
           label="Awaiting review"
           value={stats.awaitingReview}
@@ -254,8 +256,113 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
       </div>
 
       <div className="space-y-3">
+        {/* Mobile: search + Filters control — secondary filters collapsed */}
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="space-y-2.5 lg:hidden"
+          role="search"
+          aria-label="Filter cases"
+        >
+          <div className="flex items-center gap-2">
+            <label htmlFor="case-queue-search-mobile" className="sr-only">
+              Search by case ID, issue or customer
+            </label>
+            <input
+              id="case-queue-search-mobile"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by case ID, customer, or issue..."
+              className={`${controlClass} min-w-0 flex-1 px-3`}
+            />
+            <button
+              type="button"
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="case-queue-mobile-filters"
+              onClick={() => setMobileFiltersOpen((open) => !open)}
+              className={`${controlClass} inline-flex shrink-0 items-center gap-1.5 px-2.5 ${
+                mobileFiltersOpen || secondaryActiveCount > 0
+                  ? "border-foreground/20 bg-subtle text-foreground"
+                  : "text-muted hover:bg-subtle hover:text-foreground"
+              }`}
+            >
+              <AppIcon icon={ListFilter} size={16} className="text-muted" />
+              Filters
+              {secondaryActiveCount > 0 ? (
+                <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-semibold text-accent-foreground tabular-nums">
+                  {secondaryActiveCount}
+                </span>
+              ) : null}
+            </button>
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className={`${controlClass} inline-flex shrink-0 items-center px-2.5 text-muted hover:bg-subtle hover:text-foreground`}
+                aria-label="Clear filters"
+              >
+                <AppIcon icon={X} size={14} className="text-muted" />
+              </button>
+            ) : null}
+          </div>
+
+          {mobileFiltersOpen ? (
+            <div
+              id="case-queue-mobile-filters"
+              className="grid gap-2.5 border-t border-border pt-3"
+            >
+              <ToolbarSelect
+                id="filter-status-mobile"
+                label="Status"
+                value={status}
+                onChange={(value) => setStatus(value as StatusFilter)}
+                options={STATUS_OPTIONS}
+                fullWidth
+              />
+              <ToolbarSelect
+                id="filter-severity-mobile"
+                label="Severity"
+                value={severity}
+                onChange={(value) => setSeverity(value as SeverityFilter)}
+                options={SEVERITY_OPTIONS}
+                fullWidth
+              />
+              <ToolbarSelect
+                id="filter-environment-mobile"
+                label="Environment"
+                value={environment}
+                onChange={(value) =>
+                  setEnvironment(value as EnvironmentFilter)
+                }
+                options={ENVIRONMENT_OPTIONS}
+                fullWidth
+              />
+              <ToolbarSelect
+                id="filter-reported-mobile"
+                label="Reported date"
+                value={reportedRange}
+                onChange={(value) =>
+                  setReportedRange(value as ReportedDateRange)
+                }
+                options={REPORTED_OPTIONS}
+                fullWidth
+              />
+              <ToolbarSelect
+                id="filter-recommendation-mobile"
+                label="Recommendation"
+                value={recommendation}
+                onChange={(value) =>
+                  setRecommendation(value as RecommendationFilter)
+                }
+                options={RECOMMENDATION_OPTIONS}
+                fullWidth
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {/* Desktop: primary filters + More filters on one row */}
+        <div
+          className="hidden items-center gap-2 border-b border-border pb-3 lg:flex lg:flex-nowrap"
           role="search"
           aria-label="Filter cases"
         >
@@ -267,8 +374,8 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search ID or issue..."
-            className={`${controlClass} w-full max-w-[15.5rem] px-3`}
+            placeholder="Search by case ID, customer, or issue..."
+            className={`${controlClass} w-[min(100%,15rem)] shrink-0 px-3 xl:w-[16rem]`}
           />
 
           <ToolbarSelect
@@ -277,7 +384,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             value={status}
             onChange={(value) => setStatus(value as StatusFilter)}
             options={STATUS_OPTIONS}
-            widthClass="w-[11.5rem] shrink-0"
+            widthClass="w-[10.5rem] shrink-0"
           />
 
           <ToolbarSelect
@@ -286,7 +393,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             value={severity}
             onChange={(value) => setSeverity(value as SeverityFilter)}
             options={SEVERITY_OPTIONS}
-            widthClass="w-[9rem] shrink-0"
+            widthClass="w-[8.5rem] shrink-0"
           />
 
           <ToolbarSelect
@@ -295,7 +402,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             value={environment}
             onChange={(value) => setEnvironment(value as EnvironmentFilter)}
             options={ENVIRONMENT_OPTIONS}
-            widthClass="w-[10.5rem] shrink-0"
+            widthClass="w-[9.75rem] shrink-0"
           />
 
           <ToolbarSelect
@@ -306,7 +413,7 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
               setReportedRange(value as ReportedDateRange)
             }
             options={REPORTED_OPTIONS}
-            widthClass="w-[9.5rem] shrink-0"
+            widthClass="w-[8.75rem] shrink-0"
           />
 
           <MoreFiltersMenu
@@ -321,10 +428,10 @@ export function CaseQueueClient({ cases }: CaseQueueClientProps) {
             <button
               type="button"
               onClick={resetFilters}
-              className={`${controlClass} inline-flex items-center gap-1.5 px-2.5 text-muted hover:bg-subtle hover:text-foreground`}
+              className={`${controlClass} ml-auto inline-flex shrink-0 items-center gap-1.5 px-2.5 text-muted hover:bg-subtle hover:text-foreground`}
             >
               <AppIcon icon={X} size={14} className="text-muted" />
-              Clear filters
+              Clear
             </button>
           ) : null}
         </div>
@@ -376,7 +483,7 @@ function MoreFiltersMenu({
   }, [open, onOpenChange]);
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative shrink-0" ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
@@ -406,7 +513,7 @@ function MoreFiltersMenu({
           role="dialog"
           aria-label="More filters"
           aria-modal="false"
-          className="absolute left-0 z-30 mt-2 w-[min(100vw-2rem,18rem)] rounded-lg border border-border bg-surface p-4 shadow-[var(--shadow-card)] sm:left-auto sm:right-0"
+          className="absolute right-0 z-30 mt-2 w-[min(100vw-2rem,18rem)] rounded-md border border-border bg-surface p-4 shadow-[var(--shadow-card)]"
         >
           <div>
             <p className="mb-1.5 text-xs font-medium text-muted">

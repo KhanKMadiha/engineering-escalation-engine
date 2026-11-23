@@ -22,25 +22,28 @@ export function CaseIssueHeader({
   record,
   downstreamDestinations = [],
 }: CaseIssueHeaderProps) {
+  // Shared templates rely on the global DEMO notice — omit redundant
+  // "Example case". Keep "Your copy" so visitors can tell private forks apart.
   const ownership = demoCaseOwnershipLabel(record);
+  const ownershipBadge = ownership === "Your copy" ? ownership : null;
 
   return (
-    <header className="space-y-4 border-b border-border pb-5">
+    <header className="space-y-2.5 border-b border-border pb-4 sm:space-y-3 sm:pb-5">
       <Link
         href="/"
-        className="inline-flex text-sm font-medium text-muted hover:text-foreground"
+        className="inline-flex min-h-9 items-center text-sm font-medium text-muted outline-none transition-colors hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
       >
         ← Back to cases
       </Link>
 
-      <div className="min-w-0 space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+      <div className="min-w-0 space-y-2">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl lg:text-3xl">
           {stripDemoMarkerPrefix(record.issueTitle)}
         </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {ownership ? (
-            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium text-muted ring-1 ring-inset ring-border">
-              {ownership}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {ownershipBadge ? (
+            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-inset ring-border">
+              {ownershipBadge}
             </span>
           ) : null}
           <SeverityBadge severity={record.severity} />

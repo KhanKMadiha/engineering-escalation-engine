@@ -27,6 +27,12 @@ import { formatDateTime } from "@/lib/format";
 type TechnicalEvidenceSidebarProps = {
   caseId: string;
   items: TechnicalEvidenceRecord[];
+  /**
+   * When false (default), public demo visitors can inspect existing evidence
+   * only — Add / Delete UI is hidden. Mutation actions remain available when
+   * explicitly enabled for internal tooling.
+   */
+  allowMutations?: boolean;
 };
 
 type FilterId = "all" | TechnicalEvidenceType;
@@ -40,6 +46,7 @@ const initialActionState: EvidenceActionState = { ok: false };
 export function TechnicalEvidenceSidebar({
   caseId,
   items,
+  allowMutations = false,
 }: TechnicalEvidenceSidebarProps) {
   const [filter, setFilter] = useState<FilterId>("all");
   const [showForm, setShowForm] = useState(false);
@@ -100,27 +107,31 @@ export function TechnicalEvidenceSidebar({
   return (
     <div className="min-w-0 space-y-3">
       <div className="flex min-h-[1.75rem] flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold tracking-tight text-foreground">
+        <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
           Technical evidence
         </h2>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setShowForm((value) => !value);
-            setActionState(initialActionState);
-          }}
-        >
-          {showForm ? "Cancel" : "Add evidence"}
-        </Button>
+        {allowMutations ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setShowForm((value) => !value);
+              setActionState(initialActionState);
+            }}
+          >
+            {showForm ? "Cancel" : "Add evidence"}
+          </Button>
+        ) : null}
       </div>
-      <p className="text-xs leading-relaxed text-muted">
-        New evidence is saved on this case. It does not automatically update the
-        Assessment recommendation.
-      </p>
+      {allowMutations ? (
+        <p className="text-xs leading-relaxed text-muted">
+          New evidence is saved on this case. It does not automatically update
+          the Assessment recommendation.
+        </p>
+      ) : null}
 
-      {showForm ? (
+      {allowMutations && showForm ? (
         <AddEvidenceForm
           caseId={caseId}
           pending={pending}
@@ -129,7 +140,7 @@ export function TechnicalEvidenceSidebar({
         />
       ) : null}
 
-      {actionState.formError && !showForm ? (
+      {allowMutations && actionState.formError && !showForm ? (
         <p className="text-sm text-danger" role="alert">
           {actionState.formError}
         </p>
@@ -164,7 +175,11 @@ export function TechnicalEvidenceSidebar({
             item={item}
             pending={pending}
             onOpen={() => setDetailId(item.id)}
-            onDelete={() => onDelete(item.id, item.title)}
+            onDelete={
+              allowMutations
+                ? () => onDelete(item.id, item.title)
+                : undefined
+            }
           />
         ))
       ) : (
@@ -181,7 +196,11 @@ export function TechnicalEvidenceSidebar({
           item={detailItem}
           pending={pending}
           onClose={() => setDetailId(null)}
-          onDelete={() => onDelete(detailItem.id, detailItem.title)}
+          onDelete={
+            allowMutations
+              ? () => onDelete(detailItem.id, detailItem.title)
+              : undefined
+          }
           onUploadError={(message) =>
             setActionState({ ok: false, formError: message })
           }
@@ -206,10 +225,10 @@ function FilterTab({
       role="tab"
       aria-selected={selected}
       onClick={onClick}
-      className={`rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`min-h-8 rounded-md px-2.5 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
         selected
-          ? "bg-foreground text-white"
-          : "bg-subtle text-muted hover:text-foreground"
+          ? "bg-accent text-accent-foreground"
+          : "bg-subtle text-muted hover:bg-accent-soft hover:text-foreground"
       }`}
     >
       {label}
@@ -358,7 +377,7 @@ function EvidenceRecordCard({
   item: TechnicalEvidenceRecord;
   pending: boolean;
   onOpen: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const preview = evidenceBodyPreview(item.body);
   const thumb = item.attachments.find((attachment) => attachment.previewUrl);
@@ -371,10 +390,10 @@ function EvidenceRecordCard({
           onClick={onOpen}
           className="min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
             {evidenceTypeLabel(item.evidenceType)}
           </p>
-          <h3 className="mt-0.5 text-sm font-bold leading-snug text-foreground">
+          <h3 className="mt-0.5 text-sm font-semibold leading-snug text-foreground">
             {item.title.replace(/^\[FICTIONAL DEMO\]\s*/i, "")}
           </h3>
           {item.service ? (
@@ -389,19 +408,21 @@ function EvidenceRecordCard({
           >
             View
           </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={pending}
-            className="text-xs font-medium text-muted outline-none hover:text-danger focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            Delete
-          </button>
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={pending}
+              className="text-xs font-medium text-muted outline-none hover:text-danger focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Delete
+            </button>
+          ) : null}
         </div>
       </div>
 
       {preview ? (
-        <pre className="mt-2 max-h-[4.5rem] overflow-hidden whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700">
+        <pre className="mt-2 max-h-[4.5rem] overflow-hidden whitespace-pre-wrap break-words rounded-md bg-subtle/80 p-2 font-mono text-[11px] leading-relaxed text-foreground">
           {preview}
         </pre>
       ) : null}
@@ -448,7 +469,7 @@ function EvidenceDetailPanel({
   item: TechnicalEvidenceRecord;
   pending: boolean;
   onClose: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onUploadError: (message: string) => void;
 }) {
   const [editing, setEditing] = useState(false);

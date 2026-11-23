@@ -1,12 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CaseDetailTwoColumnLayout } from "@/components/cases/CaseDetailTwoColumnLayout";
+import {
+  assessmentTwoColumnGridClassName,
+  CaseDetailTwoColumnLayout,
+} from "@/components/cases/CaseDetailTwoColumnLayout";
 import { CaseDetailsCard } from "@/components/cases/CaseDetailsCard";
 import { EscalationReadinessScore } from "@/components/cases/EscalationReadinessScore";
 import { recommendationTone } from "@/components/cases/EscalationAssessmentCard";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import {
   buildAssessmentNextAction,
   buildAssessmentRecommendationDisplay,
@@ -27,7 +29,7 @@ type AssessmentTabProps = {
 };
 
 /**
- * Escalation Assessment — one primary recommendation card.
+ * Escalation Assessment — readiness score and engine recommendation as focal points.
  * Presentation only. Scoring, approval gates, and evidence storage unchanged.
  */
 export function AssessmentTab({ record, goToStage }: AssessmentTabProps) {
@@ -40,24 +42,35 @@ export function AssessmentTab({ record, goToStage }: AssessmentTabProps) {
 
   return (
     <CaseDetailTwoColumnLayout
-      mainClassName="space-y-3"
-      sidebarClassName="space-y-4"
+      gridClassName={assessmentTwoColumnGridClassName}
+      mainClassName="space-y-5"
+      sidebarClassName="space-y-3"
       main={
         <>
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              Assessment
+            </h2>
+            <p className="text-[15px] text-muted">
+              Deterministic readiness score and advisory recommendation from
+              recorded case evidence.
+            </p>
+          </div>
+
           {!escalationResult || !recommendation ? (
             <p className="text-[15px] text-muted">
               Escalation has not been evaluated yet.
             </p>
           ) : (
             <>
-              <Card padding="md">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1 space-y-2.5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted">
+              <div className="rounded-lg border border-border bg-surface px-4 py-5 sm:px-5 sm:py-6">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-10">
+                  <div className="min-w-0 space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                       Engine recommendation
                     </p>
-                    <div
-                      className={`inline-flex max-w-full rounded-md border px-3.5 py-2 text-base font-bold tracking-tight sm:text-lg ${recommendationTone(recommendation.recommendation)}`}
+                    <p
+                      className={`inline-flex max-w-full rounded-md border px-4 py-2.5 text-lg font-semibold tracking-tight sm:text-xl ${recommendationTone(recommendation.recommendation)}`}
                     >
                       {recommendation.recommendation === "escalate" ? (
                         <span className="mr-1.5" aria-hidden>
@@ -65,67 +78,62 @@ export function AssessmentTab({ record, goToStage }: AssessmentTabProps) {
                         </span>
                       ) : null}
                       {recommendation.headline}
-                    </div>
-                    <p className="max-w-2xl text-[15px] leading-relaxed text-muted">
+                    </p>
+                    <p className="text-[15px] leading-relaxed text-muted">
                       {recommendation.explanation}
                     </p>
                     {approved && recordedDecision ? (
-                      <p className="text-xs text-foreground">
+                      <p className="text-sm text-foreground">
                         <span className="font-semibold">
                           {recordedDecisionLabel(recordedDecision.decision)}.
                         </span>{" "}
                         Create escalation is available.
                       </p>
                     ) : recordedDecision ? (
-                      <p className="text-xs text-foreground">
+                      <p className="text-sm text-foreground">
                         <span className="font-semibold">
                           {recordedDecisionLabel(recordedDecision.decision)}.
                         </span>{" "}
                         Continue investigation; handoff is not available.
                       </p>
                     ) : (
-                      <p className="text-xs text-muted">
-                        Advisory recommendation — not an approved escalation.
+                      <p className="text-sm text-muted">
+                        Advisory recommendation. Human approval is a separate
+                        stage.
                       </p>
                     )}
                   </div>
-                  <EscalationReadinessScore
-                    score={recommendation.score}
-                    size="lg"
-                  />
-                </div>
-
-                <div
-                  className={`mt-5 border-t border-border/80 pt-4 ${
-                    nextAction.tone === "approved"
-                      ? "rounded-md border border-emerald-200/80 bg-emerald-50/40 px-3.5 py-3"
-                      : ""
-                  }`}
-                >
-                  <p className="text-xs font-bold uppercase tracking-wide text-muted">
-                    Next action
-                  </p>
-                  <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="min-w-0 text-[15px] leading-relaxed text-foreground">
-                      {nextAction.summary}
-                    </p>
-                    {nextAction.showNavigation ? (
-                      <Button
-                        type="button"
-                        variant={
-                          nextAction.tone === "approved"
-                            ? "primary"
-                            : "secondary"
-                        }
-                        className="shrink-0"
-                        onClick={() => goToStage(nextAction.targetStage)}
-                      >
-                        {nextAction.actionLabel} →
-                      </Button>
-                    ) : null}
+                  <div className="shrink-0 border-t border-border pt-4 sm:pt-0 lg:border-l lg:border-t-0 lg:pl-8">
+                    <EscalationReadinessScore
+                      score={recommendation.score}
+                      size="lg"
+                    />
                   </div>
                 </div>
-              </Card>
+
+                <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                      Next action
+                    </p>
+                    <p className="mt-1 text-[15px] leading-relaxed text-foreground">
+                      {nextAction.summary}
+                    </p>
+                  </div>
+                  {nextAction.showNavigation ? (
+                    <Button
+                      type="button"
+                      variant={
+                        nextAction.tone === "approved" ? "primary" : "secondary"
+                      }
+                      className="shrink-0"
+                      onClick={() => goToStage(nextAction.targetStage)}
+                    >
+                      {nextAction.actionLabel} →
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
 
               <AssessmentDetailsDisclosure record={record} />
             </>
@@ -142,10 +150,10 @@ function AssessmentDetailsDisclosure({ record }: { record: CaseRecord }) {
   const panelId = useId();
 
   return (
-    <div className="pt-1">
+    <div>
       <button
         type="button"
-        className="text-sm font-medium text-accent outline-none hover:text-accent-hover hover:underline focus-visible:ring-2 focus-visible:ring-accent"
+        className="min-h-9 text-sm font-medium text-accent outline-none hover:text-accent-hover hover:underline focus-visible:ring-2 focus-visible:ring-accent"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
@@ -163,7 +171,7 @@ function AssessmentDetailsDisclosure({ record }: { record: CaseRecord }) {
 
 /**
  * Plain-language scoring factors for Support readers.
- * Does not duplicate Investigation content or AI narrative.
+ * Does not invent factors or duplicate Investigation content.
  */
 function AssessmentDetailsPanel({ record }: { record: CaseRecord }) {
   const result = record.escalationResult;
@@ -171,15 +179,14 @@ function AssessmentDetailsPanel({ record }: { record: CaseRecord }) {
     return null;
   }
 
-  // Show all non-zero factors (increases and decreases) so the score is explainable.
   const factors = [...result.contributingFactors]
     .filter((factor) => factor.weight !== 0)
     .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
 
   return (
-    <div className="mt-3 max-w-3xl space-y-4 rounded-lg border border-border bg-subtle/40 px-3.5 py-4 text-[14px] text-slate-800">
+    <div className="mt-2.5 max-w-3xl space-y-4 border-t border-border pt-3.5 text-[14px] text-foreground">
       <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
           What contributed to this score
         </h4>
         {factors.length === 0 ? (
@@ -202,7 +209,7 @@ function AssessmentDetailsPanel({ record }: { record: CaseRecord }) {
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
           How readiness is scored
         </h4>
         <p className="mt-2 text-sm leading-relaxed text-muted">

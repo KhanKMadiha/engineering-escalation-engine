@@ -146,6 +146,18 @@ export function EscalationReadinessScore({
         </span>
       </p>
 
+      {size === "lg" ? (
+        <div
+          className="mt-3 h-1.5 w-full max-w-[11rem] overflow-hidden rounded-full bg-border sm:ml-auto"
+          role="presentation"
+        >
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
+          />
+        </div>
+      ) : null}
+
       {open ? (
         <div
           id={panelId}

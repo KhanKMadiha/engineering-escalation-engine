@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { ProductBrand } from "@/components/layout/ProductBrand";
 import { AppIcon, ICON_SIZE_NAV } from "@/components/ui/AppIcon";
 import { formatCaseKey } from "@/lib/ui/case-display";
 
@@ -108,25 +109,6 @@ function breadcrumbLabel(pathname: string): string {
   return "Case queue";
 }
 
-function BrandMark() {
-  return (
-    <>
-      <span
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-accent text-base font-bold text-white"
-        aria-hidden
-      >
-        E
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-[15px] font-semibold tracking-tight text-sidebar-foreground">
-          Escalation Engine
-        </p>
-        <p className="truncate text-xs text-sidebar-muted">Support Operations</p>
-      </div>
-    </>
-  );
-}
-
 function NavLink({
   item,
   active,
@@ -142,23 +124,25 @@ function NavLink({
       href={item.href}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
-      className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
+      className={`flex min-h-10 items-center justify-between gap-2 rounded-lg px-3 py-2 text-[15px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar ${
         active
-          ? "bg-sidebar-active text-sidebar-active-foreground"
-          : "text-sidebar-muted hover:bg-subtle hover:text-sidebar-foreground"
+          ? "border-l-2 border-sidebar-accent bg-sidebar-active pl-[10px] text-sidebar-active-foreground"
+          : "border-l-2 border-transparent text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground"
       }`}
     >
       <span className="flex min-w-0 items-center gap-2.5">
         <AppIcon
           icon={item.icon}
           size={ICON_SIZE_NAV}
-          className={active ? "text-foreground" : "text-muted"}
+          className={
+            active ? "text-sidebar-active-foreground" : "text-sidebar-muted"
+          }
         />
         <span className="truncate">{item.label}</span>
       </span>
       {showBadge ? (
         <span
-          className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-warm/25 px-1.5 py-0.5 text-[11px] font-semibold text-foreground tabular-nums"
+          className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-sidebar-accent/30 px-1.5 py-0.5 text-[11px] font-semibold text-sidebar-active-foreground tabular-nums"
           aria-label={`${item.badge} items`}
         >
           {item.badge}
@@ -178,7 +162,10 @@ function SidebarNav({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-5" aria-label="Primary">
+    <nav
+      className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-5"
+      aria-label="Primary"
+    >
       {sections.map((section) => (
         <div key={section.title}>
           <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted">
@@ -201,7 +188,7 @@ function SidebarNav({
 }
 
 /**
- * Application chrome: light sidebar + workspace canvas.
+ * Application chrome: charcoal sidebar + pure-white workspace canvas.
  * Sidebar counts come from real case statuses only.
  */
 export function AppShell({
@@ -214,10 +201,10 @@ export function AppShell({
   const sections = buildNavSections(pendingReviewsCount, handoffsCount);
 
   return (
-    <div className="flex min-h-full">
-      <aside className="sticky top-0 z-20 hidden h-screen w-[15.5rem] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
-        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
-          <BrandMark />
+    <div className="flex min-h-full bg-background">
+      <aside className="sticky top-0 z-20 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+        <div className="flex min-h-14 shrink-0 items-center border-b border-sidebar-border px-4 py-3">
+          <ProductBrand />
         </div>
         <SidebarNav pathname={pathname} sections={sections} />
       </aside>
@@ -226,18 +213,18 @@ export function AppShell({
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal>
           <button
             type="button"
-            className="absolute inset-0 bg-[#20242a]/40"
+            className="absolute inset-0 bg-[#1c1f24]/50"
             aria-label="Close navigation"
             onClick={() => setMobileNavOpen(false)}
           />
-          <aside className="relative flex h-full w-[15.5rem] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
-            <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border px-5">
-              <div className="flex min-w-0 items-center gap-3">
-                <BrandMark />
+          <aside className="relative flex h-full w-[min(17rem,88vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <div className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <ProductBrand compact />
               </div>
               <button
                 type="button"
-                className="rounded-md px-2 py-1 text-sm text-sidebar-muted hover:bg-subtle hover:text-sidebar-foreground"
+                className="min-h-10 shrink-0 rounded-md px-2.5 py-1.5 text-sm text-sidebar-muted outline-none hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-accent"
                 onClick={() => setMobileNavOpen(false)}
               >
                 Close
@@ -253,28 +240,34 @@ export function AppShell({
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
+        <header className="sticky top-0 z-10 border-b border-border bg-surface">
           <div
-            className="flex h-14 items-center justify-between gap-3"
+            className="flex h-12 items-center justify-between gap-3 sm:h-14"
             style={{
               paddingLeft: "var(--content-pad-x)",
               paddingRight: "var(--content-pad-x)",
             }}
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
-                className="inline-flex items-center rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-foreground lg:hidden"
+                className="inline-flex min-h-10 items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground outline-none hover:bg-subtle focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 lg:hidden"
                 aria-expanded={mobileNavOpen}
                 onClick={() => setMobileNavOpen(true)}
               >
                 Menu
               </button>
-              <p className="truncate text-sm text-muted">
-                <span className="font-medium text-foreground">Cases</span>
-                <span className="mx-1.5 text-border">/</span>
-                <span>{breadcrumbLabel(pathname)}</span>
-              </p>
+              <nav aria-label="Breadcrumb" className="min-w-0">
+                <ol className="flex items-center gap-1.5 text-sm">
+                  <li className="font-medium text-foreground">Cases</li>
+                  <li className="text-border" aria-hidden>
+                    /
+                  </li>
+                  <li className="truncate text-muted">
+                    {breadcrumbLabel(pathname)}
+                  </li>
+                </ol>
+              </nav>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <p
@@ -292,7 +285,7 @@ export function AppShell({
                 </span>
               </p>
               <span
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-subtle text-xs font-semibold text-foreground ring-1 ring-border"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent ring-1 ring-[#b8ddd4]"
                 aria-hidden
               >
                 MK

@@ -29,7 +29,8 @@ export function HandoffTab({
   if (record.handoff && approved) {
     return (
       <CaseDetailTwoColumnLayout
-        mainClassName="space-y-5"
+        mainClassName="space-y-3"
+        sidebarClassName="space-y-3"
         main={
           <CreateEscalationApprovedView
             caseId={record.id}
@@ -61,8 +62,10 @@ export function HandoffTab({
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-xl font-semibold text-foreground">Create escalation</h2>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">{description}</p>
+      <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+        Create escalation
+      </h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-muted">{description}</p>
     </div>
   );
 }

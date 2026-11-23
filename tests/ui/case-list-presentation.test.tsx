@@ -101,14 +101,18 @@ describe("dashboard case list presentation", () => {
     expect(html).toContain("table-fixed");
     expect(html).toContain("xl:block");
     expect(html).toContain("xl:hidden");
+    expect(html).toContain("width:10%");
     expect(html).toContain("width:32%");
-    expect(html).toContain("width:9%");
+    expect(html).toContain("width:14%");
+    expect(html).toContain("width:8%");
+    expect(html).toContain("align-middle");
     expect(html).toContain("whitespace-nowrap");
 
     expect(html).toContain("Northstar Financial");
     expect(html).toContain("Apex Digital");
     expect(html).toContain("Meridian Systems");
     expect(html).not.toContain("[DEMO]");
+    expect(html).not.toContain("Example case");
     expect(html).toContain(formatCaseKey(cases[0].id));
     expect(html).not.toContain("MS Teams Integration ·");
     expect(html).not.toContain("SSO ·");

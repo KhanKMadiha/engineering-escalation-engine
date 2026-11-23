@@ -7,6 +7,7 @@ import {
   resetApprovalRationaleDraftsForTests,
   setApprovalRationaleDraft,
 } from "@/lib/ui/approval-rationale-draft";
+import { submitHumanDecisionWithDraftLifecycle } from "@/lib/ui/approval-decision-submit";
 
 type DecisionAction = (
   state: SubmitHumanDecisionActionState,
@@ -25,7 +26,10 @@ vi.mock("react", async (importOriginal) => {
   const react = await importOriginal<typeof import("react")>();
   return {
     ...react,
-    useActionState: (action: DecisionAction, initial: SubmitHumanDecisionActionState) => {
+    useActionState: (
+      action: DecisionAction,
+      initial: SubmitHumanDecisionActionState,
+    ) => {
       captureAction(action);
       return react.useActionState(action, initial);
     },
@@ -132,7 +136,7 @@ describe("HumanDecisionPanel draft preservation", () => {
     expect(reopenedExample).toContain(suggested);
   });
 
-  it("keeps an edited draft after failure and stays on the case", async () => {
+  it("restores rationale from the failed action and stays on the case", async () => {
     const draft = "  Keep my exact edited rationale.  ";
     setApprovalRationaleDraft(caseId, draft);
     submit.mockResolvedValueOnce({ ok: false, rationale: draft.trim() });
@@ -143,7 +147,83 @@ describe("HumanDecisionPanel draft preservation", () => {
     const [action] = captureAction.mock.lastCall!;
     await action({ ok: true }, new FormData());
 
-    expect(getApprovalRationaleDraft(caseId)).toBe(draft);
+    // Draft lifecycle clears before submit, then restores action rationale.
+    expect(getApprovalRationaleDraft(caseId)).toBe(draft.trim());
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("clears the shared-example draft before the server action runs", async () => {
+    const visitorDraft =
+      "Visitor-edited Orchid rationale that must not linger after approve.";
+    setApprovalRationaleDraft(caseId, visitorDraft);
+
+    const formData = new FormData();
+    formData.set("caseId", caseId);
+    formData.set("decision", "approved");
+    formData.set("rationale", visitorDraft);
+
+    const lifecycleSubmit = vi.fn(async () => {
+      // Draft must already be cleared before the server action runs.
+      expect(getApprovalRationaleDraft(caseId)).toBeUndefined();
+      return { ok: true, caseId: "private-copy" };
+    });
+
+    const next = await submitHumanDecisionWithDraftLifecycle(
+      caseId,
+      { ok: true },
+      formData,
+      lifecycleSubmit,
+    );
+
+    expect(next.ok).toBe(true);
+    expect(lifecycleSubmit).toHaveBeenCalledOnce();
+    expect(getApprovalRationaleDraft(caseId)).toBeUndefined();
+  });
+
+  it("restores the exact draft after a failed submission via lifecycle helper", async () => {
+    const formData = new FormData();
+    formData.set("caseId", caseId);
+    formData.set("decision", "approved");
+    formData.set("rationale", "   ");
+
+    setApprovalRationaleDraft(caseId, "will be cleared then restored");
+
+    const next = await submitHumanDecisionWithDraftLifecycle(
+      caseId,
+      { ok: true },
+      formData,
+      async () => ({
+        ok: false,
+        message: "validation_failed",
+        rationale: "   ",
+      }),
+    );
+
+    expect(next.ok).toBe(false);
+    expect(getApprovalRationaleDraft(caseId)).toBe("   ");
+  });
+
+  it("explains the private copy beside decision buttons on shared examples only", () => {
+    const shared = renderToStaticMarkup(
+      <HumanDecisionPanel
+        caseId={caseId}
+        initialRationale={suggested}
+        isSharedExample
+      />,
+    );
+    expect(shared).toContain(
+      "Your decision is saved to a private copy of this case. The shared example stays available for other visitors.",
+    );
+
+    const privateCopy = renderToStaticMarkup(
+      <HumanDecisionPanel
+        caseId="af9e90c6-a008-4f2b-98c4-a268cb79a306"
+        initialRationale={suggested}
+        isSharedExample={false}
+      />,
+    );
+    expect(privateCopy).not.toContain(
+      "Your decision is saved to a private copy of this case.",
+    );
   });
 });
