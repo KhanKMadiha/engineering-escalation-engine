@@ -1,5 +1,14 @@
 # Engineering Escalation Engine
 
+## Current interactive portfolio demo (November 2026)
+
+The current web UI uses a **five-stage journey**: Case details → Investigation → Assessment → Escalation approval → Create escalation. The case queue provides access to fictional examples, including Orchid Health (human approval), Meridian Systems (insufficient evidence) and Vertex Media (already-approved handoff).
+
+The seeded examples use predefined AI analysis; in the architecture, AI analysis is advisory, deterministic rules recommend, and only a human decision authorises escalation. Approved cases can create **simulated**, not real, Jira or Rootly records. Interactive demo changes are copy-on-write into an anonymous visitor-specific workspace so shared example cases remain unchanged. Simulated downstream records are stored for that workspace and can be reopened during its lifetime; they do not call Jira or Rootly APIs. The default demo workspace lifetime is 48 hours.
+
+**Documentation note:** The older sections below on three seeded demo cases and session-only downstream previews describe the original implementation and are retained for historical context; they are **not** a description of the current hosted interactive demo. Refer to the current UI and the demo workspace/downstream-record code for current behaviour. Do not use the legacy instructions to delete or reseed production data without an explicit review.
+
+
 AI-assisted support operations platform for investigating customer issues, deciding whether engineering escalation is warranted, generating structured handoffs, and capturing human decisions.
 
 ## Architecture
