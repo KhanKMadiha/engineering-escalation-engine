@@ -1,198 +1,70 @@
 # Engineering Escalation Engine
 
-## Current interactive portfolio demo (November 2026)
+An interactive Support Operations demo for reviewing technical evidence, assessing escalation readiness and preparing an Engineering handoff after human approval. I built it to show how Support can give Engineering the impact, reproduction steps and evidence it needs to pick up a case.
 
-The current web UI uses a **five-stage journey**: Case details → Investigation → Assessment → Escalation approval → Create escalation. The case queue provides access to fictional examples, including Orchid Health (human approval), Meridian Systems (insufficient evidence) and Vertex Media (already-approved handoff).
+[Try the live demo](https://engineering-escalation-engine.vercel.app/) · [Read the portfolio case study](https://madihaintech.me/engineering-escalation-engine.html)
 
-The seeded examples use predefined AI analysis; in the architecture, AI analysis is advisory, deterministic rules recommend, and only a human decision authorises escalation. Approved cases can create **simulated**, not real, Jira or Rootly records. Interactive demo changes are copy-on-write into an anonymous visitor-specific workspace so shared example cases remain unchanged. Simulated downstream records are stored for that workspace and can be reopened during its lifetime; they do not call Jira or Rootly APIs. The default demo workspace lifetime is 48 hours.
+![The live Case Queue shows charcoal navigation and a filterable table of fictional support cases with their statuses and recommendations.](docs/images/case-queue.webp)
 
-**Documentation note:** The older sections below on three seeded demo cases and session-only downstream previews describe the original implementation and are retained for historical context; they are **not** a description of the current hosted interactive demo. Refer to the current UI and the demo workspace/downstream-record code for current behaviour. Do not use the legacy instructions to delete or reseed production data without an explicit review.
+## Walk through the demo
 
+Open the **Case Queue** and choose **Orchid Health** to review evidence and record an approval, **Meridian Systems** to see the insufficient-evidence path, or **Vertex Media** to start from an approved handoff.
 
-AI-assisted support operations platform for investigating customer issues, deciding whether engineering escalation is warranted, generating structured handoffs, and capturing human decisions.
+| Stage | What happens |
+| --- | --- |
+| **Case details** | Review the reported issue, affected product and environment, and expected and actual behaviour. |
+| **Investigation** | Review scope, impact, reproduction, troubleshooting and technical evidence such as logs, request IDs and screenshots. |
+| **Assessment** | Inspect the readiness score, contributing factors and advisory recommendation. Cases with insufficient evidence stay in investigation. |
+| **Escalation approval** | A reviewer checks the evidence, edits the rationale and decides whether to approve or continue investigating. |
+| **Create escalation** | Review the approved handoff, preview a simulated Jira issue or Rootly incident, and save or reopen the record in the app. |
 
-## Architecture
+The **Activity** page shows recorded events for cases visible to the visitor. **How it works** explains the five stages in the app.
 
-```
-                    ┌── Web UI
-                    │
-                    ↓
-             Application Services
-               ↑           ↑
-               │           │
-        Server Actions   REST API (/api/v1)
-               │           │
-               └─────┬─────┘
-                     ↓
-               Domain Logic
-                     ↓
-               Repository
-                     ↓
-              Supabase/Postgres (or in-memory)
-```
+![Orchid Health’s assessment shows a readiness score of 98 out of 100 and an advisory recommendation to escalate to Engineering.](docs/images/assessment-readiness.webp)
 
-Decision authority (unchanged):
+## Architecture and decision safeguards
 
-```
-AI Analysis
-    ↓
-Evidence Validation
-    ↓
-Deterministic Escalation Engine   ← recommends only
-    ↓
-Human Decision                    ← sole authority for escalated
-    ↓
-Engineering Handoff
-    ↓
-Integrations execute              ← after approval only
-```
+- **Application.** Next.js App Router, React and TypeScript. Server Actions and versioned Route Handlers call application services for case management, analysis and decisions. See the [REST API reference](docs/api.md).
+- **Advisory analysis.** The server-side OpenAI Responses API returns a structured response validated with Zod. The pipeline checks extracted evidence against the recorded input. Shared examples use predefined analysis data.
+- **Deterministic scoring.** TypeScript rules apply fixed weights and thresholds to case signals, including validated evidence. The score and contributing factors explain the recommendation. Identical scoring inputs yield the same result.
+- **Human approval.** Approval requires a recorded human decision and rationale. The decision service prepares a handoff from the case, assessment and decision data only when approval succeeds. Downstream creation also checks that approval and a handoff exist.
+- **Persistence and verification.** The hosted app uses Supabase Postgres for cases, evidence, assessments, decisions, handoffs, audit events and simulated records. Local development can use an in-memory repository. ESLint and Vitest cover code quality and core workflows.
 
-AI analyses. Rules recommend. Humans decide. Integrations execute.
+## Demo boundaries
 
-AI does not decide. The engine does not authorize. Only a human decision authorizes escalation. Downstream actions run only after approval.
+Visitors can browse fictional examples without signing in. Supported decisions and simulated downstream creation use a signed, anonymous visitor session. The app copies the shared case into that visitor’s workspace for those actions, preserving the shared template. Saved demo records can be reopened within the workspace’s default 48-hour lifetime.
 
-| Layer | Owns |
-|-------|------|
-| AI analysis | Structured case analysis + evidence candidates |
-| Evidence validation | Trusted `extracted_evidence` only |
-| Escalation Engine | Deterministic score + recommendation (no DB, no OpenAI) |
-| Human decision | Sole authority for `escalated` status |
-| Repository | Persistence only |
-| REST API | Validation + HTTP mapping — **no business logic** |
+**Jira and Rootly are simulated.** The app generates previews and saves records internally. It makes no requests to Jira or Rootly and creates no records in either external system.
 
-## Getting started
+The hosted app is a portfolio demo. Use fictional data only. The visitor cookie scopes the demo workspace. An enterprise deployment would require account authentication and role-based access controls. See [SECURITY.md](SECURITY.md).
+
+![Vertex Media’s simulated Jira preview shows the issue title, affected accounts, priority and HTTP 504 behaviour prepared from the approved handoff.](docs/images/simulated-jira-preview.webp)
+
+## Local development
+
+Use Node.js 22 or later and npm. From a checkout, start the app with the in-memory repository:
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
-# Set OPENAI_API_KEY (and optionally Supabase vars — see below)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### Persistence (Phase 7)
-
-By default the app uses the **in-memory** repository (data lost on restart).
-
-To use **Supabase/Postgres**:
-
-1. Create a Supabase project.
-2. Apply `supabase/migrations/20260907000000_phase7_persistence.sql` (see `supabase/README.md`).
-3. Set in `.env.local`:
+Open [http://localhost:3000](http://localhost:3000). The local case queue starts empty. To load the fictional examples, restart the dev server with seeding enabled, then call the local seed route from another terminal:
 
 ```bash
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-CASE_REPOSITORY=supabase
-```
-
-Service-role credentials are **server-only**. Never use `NEXT_PUBLIC_` for secrets.
-
-### REST API (Phase 8)
-
-Versioned under `/api/v1`. OpenAPI: [GET /api/docs](http://localhost:3000/api/docs) or `docs/api.md`.
-
-| Method | Path |
-|--------|------|
-| GET | `/api/v1/health` |
-| GET | `/api/v1/health/ready` |
-| POST / GET | `/api/v1/cases` |
-| GET | `/api/v1/cases/:id` |
-| POST | `/api/v1/cases/:id/analyze` |
-| POST | `/api/v1/cases/:id/decision` |
-| GET | `/api/v1/cases/:id/events` |
-| GET | `/api/v1/cases/:id/handoff` |
-
-- **Auth:** not implemented — controlled/demo use only; production needs auth + RBAC.
-- **Errors:** `{ "error": { "code", "message", "requestId" } }`
-- **Request ID:** `x-request-id` (operational correlation; not case evidence)
-- **Pagination:** `?page=1&pageSize=25` (max 100); filters `status`, `severity`
-- **Case fields:** optional `stepsToReproduce`, `expectedBehaviour`, `actualBehaviour` (customer/support-provided; steps alone ≠ confirmed reproducibility)
-- **Concurrency:** analysis locks + unique human decisions preserved through the API
-- **CORS:** no broad permissive CORS; intended for same-origin / internal clients
-- **Integrations:** REST API does not create Jira/Rootly work items
-
-### Demo downstream actions (simulated Jira / Rootly)
-
-After human approval, the Handoff tab offers **demo-only** Jira and Rootly actions so the full support-to-engineering workflow can be shown in portfolio walkthroughs.
-
-| | |
-|--|--|
-| What they do | Build deterministic local previews from the **approved handoff** |
-| What they do **not** do | Call Jira/Rootly, use tokens/OAuth/SDKs, or make network requests |
-| When available | Only after human approval + generated handoff |
-| State | UI/session memory only — resets on refresh; not persisted |
-| IDs | Deterministic (`ENG-DEMO-####`, `INC-DEMO-###`) from case + handoff IDs |
-
-Real integration adapters could replace these demo adapters later without changing the AI → rules → human decision workflow.
-
-### Demo cases (fictional)
-
-Three labelled `[DEMO]` support cases for walkthroughs. They are **not** real incidents. Seeded through `CaseService` + `CaseOrchestrator` (validation + provenance preserved). Analysis uses fixed demo payloads (no OpenAI). **Human decision is never auto-applied** — Case 1 stays `awaiting_decision` even when the engine recommends escalate.
-
-| Key | Customer (fictional) | Intent | Reported | Status after seed | Expected recommendation |
-|-----|----------------------|--------|----------|--------------------|-------------------------|
-| `clear_escalation` | Northstar Financial | API v3 strong evidence → human approve | 8 Sep 2026 | `escalated` | `escalate` |
-| `insufficient_evidence` | Meridian Systems | SSO after IdP cert rotation | 11 Sep 2026 | `awaiting_decision` | `insufficient_evidence` |
-| `continue_investigation` | Apex Digital | MS Teams Auto-Answer → human continues investigation | 12 Sep 2026 | `investigation_continues` | `continue_investigation` |
-
-There is no `investigating` workflow status. Case C uses `investigation_continues` after a real DecisionService reject (closest valid “active investigation” state).
-
-Reported dates are fixed deterministic seed timestamps (not “today”). **Clear existing `[DEMO]` rows before reseeding** — seed skips matching titles and will otherwise leave old cases alongside new titles.
-
-**Requires explicit action** — never auto-runs in production:
-
-```bash
-# Persist to the configured repository (Supabase if CASE_REPOSITORY=supabase)
-ALLOW_DEMO_SEED=1 npm run seed:demo
-
-# For in-memory UI during `npm run dev` (same Node process as the app):
-ALLOW_DEMO_SEED=1 npm run dev
-# then:
-curl -X POST http://localhost:3000/api/demo/seed
-```
-
-CLI in-memory seed only lives in that process; use `POST /api/demo/seed` so the Next.js app’s memory store is populated.
-
-**Updating demo data:** seed skips cases whose `issueTitle` already exists. If you still see an old product such as `Content API v3`, or an old placeholder customer such as `Example Enterprise A`, clear the stale demo rows and reseed (see below). A seed response may include `staleSkipped` when a stored product or customer no longer matches the canonical definition.
-
-```bash
-# In-memory (default CASE_REPOSITORY=memory): restart the Next.js process, then
 ALLOW_DEMO_SEED=1 npm run dev
 curl -X POST http://localhost:3000/api/demo/seed
-
-# Supabase: delete fictional demo rows, then reseed
-# DELETE FROM support_cases WHERE customer LIKE '%[DEMO]%' OR issue_title LIKE '%[DEMO]%';
-ALLOW_DEMO_SEED=1 CASE_REPOSITORY=supabase npm run seed:demo
 ```
 
-### Scripts
+The seed route fills the running app’s in-memory repository using predefined analysis, so it needs no OpenAI key. In-memory data is lost when the server restarts. Set `OPENAI_API_KEY` in `.env.local` only if you want to analyse new fictional cases with OpenAI.
+
+For persistent local development, use a separate non-production Supabase project. Apply the SQL files in [`supabase/migrations`](supabase/migrations) in timestamp order, set `CASE_REPOSITORY=supabase`, and set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Keep the service role and OpenAI keys server-side. See the [database notes](supabase/README.md) for schema and test context.
 
 ```bash
-npm test          # unit + API + contract tests (no live Supabase required)
 npm run lint
+npm test
 npm run build
-ALLOW_DEMO_SEED=1 npm run seed:demo   # fictional demo cases (explicit only)
 ```
 
-Support cases capture structured reproduction information when available:
-
-- Steps to Reproduce
-- Expected Behaviour
-- Actual Behaviour
-- Reproducibility (AI assessment — advisory; confirmed reproduction is a separate Escalation Engine signal)
-
-Documented steps do **not** automatically establish that an issue is reproducible.
-
-## Security
-
-See [SECURITY.md](./SECURITY.md). Authentication / RBAC are **not** implemented yet; `decidedBy` remains a placeholder (`support_engineer`).
-
-## Stack
-
-- Next.js (App Router) + TypeScript + React
-- Zod validation
-- OpenAI structured outputs (server-side)
-- Supabase JS client (server-side persistence)
-- Vitest
+The standard checks use local fixtures. Live Supabase integration checks are opt-in. The [previous README](https://github.com/KhanKMadiha/engineering-escalation-engine/blob/66619c7967a1924891bb53a2c2fba0be19a9d567/README.md) preserves the original implementation notes.
