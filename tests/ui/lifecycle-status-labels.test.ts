@@ -11,7 +11,16 @@ describe("formatLifecycleStatusLabel", () => {
     ).toBe("Awaiting approval");
   });
 
-  it("presents escalated without destinations as Approved for handoff", () => {
+  it("presents escalated queue rows without destinations as Approval recorded", () => {
+    expect(
+      formatLifecycleStatusLabel({
+        status: "escalated",
+        escalationRecommendation: "escalate",
+      }),
+    ).toBe("Approval recorded");
+  });
+
+  it("presents escalated detail with known empty destinations as Approved for handoff", () => {
     expect(
       formatLifecycleStatusLabel({
         status: "escalated",

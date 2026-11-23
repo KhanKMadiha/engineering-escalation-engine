@@ -1,17 +1,18 @@
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { getCaseService } from "@/lib/cases/get-case-service";
+import { listVisibleCases } from "@/lib/demo/list-visible-cases";
 import { buildActivityFeed } from "@/lib/ui/activity-feed";
 import type { CaseRecord } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Cross-case activity from existing audit events on loaded cases.
- * Does not invent events.
+ * Cross-case activity from existing audit events on visible cases only
+ * (shared templates + this visitor's private forks). Does not invent events.
  */
 export default async function ActivityPage() {
   const service = getCaseService();
-  const summaries = await service.listCases();
+  const summaries = await listVisibleCases();
   const records: CaseRecord[] = [];
 
   for (const summary of summaries) {
@@ -30,9 +31,7 @@ export default async function ActivityPage() {
           Activity
         </h1>
         <p className="max-w-3xl text-[15px] text-muted">
-          Recent audit events across cases — intake, analysis, human decisions
-          and Engineering handoffs. Events are recorded by the system; nothing
-          here is fabricated.
+          Review case updates, decisions and Engineering handoffs.
         </p>
       </div>
       <ActivityFeed items={items} />

@@ -6,7 +6,11 @@ import type { ReactNode } from "react";
  * so the sidebar does not shift when switching tabs.
  */
 export const caseDetailTwoColumnGridClassName =
-  "grid gap-6 lg:gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,30%)]";
+  "grid gap-5 lg:gap-6 xl:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,30%)]";
+
+/** Assessment: wider main column so score + recommendation use available space. */
+export const assessmentTwoColumnGridClassName =
+  "grid gap-5 lg:gap-6 xl:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,22%)]";
 
 type CaseDetailTwoColumnLayoutProps = {
   main: ReactNode;
@@ -15,6 +19,8 @@ type CaseDetailTwoColumnLayoutProps = {
   mainClassName?: string;
   /** Optional extra classes on the sidebar column. */
   sidebarClassName?: string;
+  /** Optional grid class override (Assessment uses a wider main column). */
+  gridClassName?: string;
 };
 
 /**
@@ -27,12 +33,13 @@ export function CaseDetailTwoColumnLayout({
   sidebar,
   mainClassName = "",
   sidebarClassName = "",
+  gridClassName = caseDetailTwoColumnGridClassName,
 }: CaseDetailTwoColumnLayoutProps) {
   return (
-    <div className={caseDetailTwoColumnGridClassName}>
+    <div className={gridClassName}>
       <div className={`min-w-0 order-1 ${mainClassName}`.trim()}>{main}</div>
       <aside
-        className={`min-w-0 order-2 overflow-x-hidden border-t border-border pt-6 lg:border-t-0 lg:pt-0 ${sidebarClassName}`.trim()}
+        className={`min-w-0 order-2 overflow-x-hidden border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0 xl:pl-8 ${sidebarClassName}`.trim()}
       >
         {sidebar}
       </aside>

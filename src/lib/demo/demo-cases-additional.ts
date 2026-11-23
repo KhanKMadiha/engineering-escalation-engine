@@ -600,8 +600,17 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
     key: "http_504_latency",
     label: "HTTP 504 latency",
     expectedRecommendation: "escalate",
-    expectedStatus: "awaiting_decision",
+    // Align with hosted Vertex: historically approved with prepared handoff.
+    // Orchid (saml_subset_users) remains the ordinary pending escalate review.
+    expectedStatus: "escalated",
     reportedAt: "2026-11-05T09:35:00.000Z",
+    seedDecision: {
+      decision: "approved",
+      // Plain-language reason grounded in recorded Vertex evidence only.
+      rationale:
+        "HTTP 504 Gateway Timeout errors were reproduced in prod. Request IDs and logs were captured, and multiple customer accounts are affected. Engineering investigation is required.",
+      decidedAt: "2026-11-05T14:20:00.000Z",
+    },
     createInput: {
       customer: `${DEMO} Vertex Media`,
       product: "API Gateway",
@@ -620,7 +629,7 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
       expectedBehaviour:
         "Authenticated API requests should complete within SLA and return HTTP 200 rather than intermittent 504 timeouts.",
       actualBehaviour:
-        "Requests intermittently return HTTP 504 with elevated upstream latency.",
+        "Requests intermittently return HTTP 504 Gateway Timeout in production.",
       troubleshootingPerformed: [
         "Reproduced the issue in production.",
         "Collected gateway timeout logs with request IDs.",
@@ -684,9 +693,9 @@ export const ADDITIONAL_DEMO_CASE_DEFINITIONS: readonly DemoCaseDefinition[] = [
           quotedExcerpt: "intermittent HTTP 504 responses",
         },
         {
-          description: "Elevated upstream latency",
+          description: "Production 504 Gateway Timeout",
           sourceField: "actualBehaviour",
-          quotedExcerpt: "elevated upstream latency",
+          quotedExcerpt: "HTTP 504 Gateway Timeout in production",
         },
         {
           description: "Prod 504 symptoms in description",

@@ -133,7 +133,7 @@ export function DownstreamDemoActions({
   const actions = (
     <div className="space-y-3">
       {(existingJira || existingRootly) && (
-        <div className="rounded-md border border-border bg-subtle/40 px-3 py-2 text-sm text-foreground">
+        <div className="rounded-md border border-border px-3 py-2.5 text-sm text-foreground">
           <p className="font-medium">Saved demo records for this case</p>
           <ul className="mt-1 space-y-1 text-muted">
             {existingJira ? (
@@ -155,7 +155,7 @@ export function DownstreamDemoActions({
           </ul>
         </div>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
         <Button
           type="button"
           variant="primary"
@@ -188,9 +188,9 @@ export function DownstreamDemoActions({
 
   if (landing) {
     return (
-      <Card padding="lg" className="space-y-4">
+      <Card padding="sm" className="space-y-3.5">
         {landing}
-        <div className="border-t border-border pt-4">{actions}</div>
+        <div className="border-t border-border pt-3.5">{actions}</div>
       </Card>
     );
   }
@@ -200,7 +200,7 @@ export function DownstreamDemoActions({
 
 function DemoRecordBadge() {
   return (
-    <span className="inline-flex items-center rounded border border-slate-200 bg-subtle px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted">
+    <span className="inline-flex items-center rounded-md border border-border bg-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
       Simulated demo record
     </span>
   );
@@ -215,7 +215,9 @@ function Field({
 }) {
   return (
     <div className="grid gap-1 border-b border-border py-2.5 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-4">
-      <dt className="text-sm font-medium text-muted">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted sm:pt-0.5 sm:text-sm sm:font-medium sm:normal-case sm:tracking-normal">
+        {label}
+      </dt>
       <dd className="min-w-0 text-[15px] leading-relaxed text-foreground">
         {children}
       </dd>
@@ -234,7 +236,7 @@ function EvidenceBlock({ evidence }: { evidence: string[] }) {
         {prominent.map((line) => (
           <li
             key={line}
-            className="rounded-md border border-border bg-subtle/40 px-3 py-2 font-mono text-[13px] leading-snug"
+            className="rounded-md border border-border px-3 py-2 font-mono text-[13px] leading-snug"
           >
             {line}
           </li>
@@ -246,7 +248,7 @@ function EvidenceBlock({ evidence }: { evidence: string[] }) {
             {remaining.map((line) => (
               <li
                 key={line}
-                className="rounded-md border border-border bg-subtle/40 px-3 py-2 font-mono text-[13px] leading-snug"
+                className="rounded-md border border-border px-3 py-2 font-mono text-[13px] leading-snug"
               >
                 {line}
               </li>
@@ -361,7 +363,7 @@ function DownstreamSuccessCard({
       : "Simulated Rootly incident created";
 
   return (
-    <Card padding="lg" className="space-y-4">
+    <Card padding="sm" className="space-y-3.5">
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <h3 className="text-lg font-semibold tracking-tight text-foreground">
           {title}
@@ -385,7 +387,7 @@ function DownstreamSuccessCard({
           ? "This is a simulated Jira issue created for this demo. No live Jira issue was created."
           : "This is a simulated Rootly incident created for this demo. No live Rootly incident was created."}
       </p>
-      <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2.5 border-t border-border pt-3.5 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onBack}>
           Back to Create escalation
         </Button>
@@ -409,7 +411,7 @@ function JiraPreviewCard({
 }) {
   const p = result.preview;
   return (
-    <Card padding="lg" className="space-y-4">
+    <Card padding="sm" className="space-y-3.5">
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <h3 className="text-lg font-semibold tracking-tight text-foreground">
           Jira issue preview
@@ -486,7 +488,7 @@ function RootlyPreviewCard({
 }) {
   const p = result.preview;
   return (
-    <Card padding="lg" className="space-y-4">
+    <Card padding="sm" className="space-y-3.5">
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <h3 className="text-lg font-semibold tracking-tight text-foreground">
           Rootly incident preview

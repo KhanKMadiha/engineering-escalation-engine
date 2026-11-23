@@ -49,12 +49,12 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
 
   return (
     <CaseDetailTwoColumnLayout
-      mainClassName="space-y-5"
-      sidebarClassName="space-y-6"
+      mainClassName="space-y-3"
+      sidebarClassName="space-y-3"
       main={
         <>
           {approved && decision ? (
-            <Card padding="lg" className="space-y-4">
+            <Card padding="sm" className="space-y-4">
               <HumanDecisionResultPanel
                 decision={decision}
                 caseStatus={record.status}
@@ -72,11 +72,11 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
           ) : null}
 
           {approved && !decision ? (
-            <Card padding="lg">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <Card padding="sm">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                 Approved for handoff
               </h2>
-              <p className="mt-2 text-[15px] text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 This case is approved for handoff. Open Create escalation to
                 review the prepared package and create simulated destination
                 records.
@@ -93,12 +93,12 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
           ) : null}
 
           {continueInvestigation && decision ? (
-            <Card padding="lg" className="space-y-4">
+            <Card padding="sm" className="space-y-4">
               <HumanDecisionResultPanel
                 decision={decision}
                 caseStatus={record.status}
               />
-              <p className="text-[15px] text-muted">
+              <p className="text-[15px] leading-relaxed text-muted">
                 Escalation approval is not required while investigation
                 continues.
               </p>
@@ -113,8 +113,8 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
           ) : null}
 
           {!decision && needsFurtherInvestigation ? (
-            <Card padding="lg">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <Card padding="sm">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                 Escalation approval not required
               </h2>
               <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
@@ -134,21 +134,23 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
           ) : null}
 
           {escalateReady && result ? (
-            <Card padding="lg" className="space-y-5">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <Card padding="sm" className="space-y-4">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                 Escalation approval
               </h2>
 
-              <div className="flex flex-col gap-3 rounded-lg border border-border bg-subtle/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                     Engine recommendation
                   </p>
                   <p className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                     Escalate to Engineering
                   </p>
                 </div>
-                <EscalationReadinessScore score={result.escalationScore} />
+                <div className="shrink-0">
+                  <EscalationReadinessScore score={result.escalationScore} />
+                </div>
               </div>
 
               {isSharedFictionalDemoCase(record) ? (
@@ -161,16 +163,17 @@ export function ApprovalTab({ record, goToStage }: ApprovalTabProps) {
               <HumanDecisionPanel
                 caseId={record.id}
                 initialRationale={draftRationale}
+                isSharedExample={isSharedFictionalDemoCase(record)}
               />
             </Card>
           ) : null}
 
           {!result && !decision ? (
-            <Card padding="lg">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <Card padding="sm">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                 Escalation approval
               </h2>
-              <p className="mt-2 text-[15px] text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 Escalation has not been assessed yet. Review Assessment before a
                 decision can be recorded.
               </p>

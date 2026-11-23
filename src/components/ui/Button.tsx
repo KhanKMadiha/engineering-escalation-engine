@@ -21,13 +21,13 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2.5 text-[15px]",
-  lg: "px-5 py-3 text-base",
+  sm: "min-h-9 px-3 py-1.5 text-sm",
+  md: "min-h-10 px-4 py-2.5 text-[15px]",
+  lg: "min-h-11 px-5 py-3 text-base",
 };
 
 /**
- * Shared button primitive — neutral primary, presentation only.
+ * Shared button primitive — teal primary, presentation only.
  */
 export function Button({
   variant = "primary",
@@ -40,7 +40,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg border font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed ${VARIANT_CLASS[variant]} ${SIZE_CLASS[size]} ${className}`.trim()}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed ${VARIANT_CLASS[variant]} ${SIZE_CLASS[size]} ${className}`.trim()}
       {...props}
     >
       {children}

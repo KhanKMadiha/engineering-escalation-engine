@@ -15,11 +15,11 @@ type CaseDetailsCardProps = {
  */
 export function CaseDetailsCard({ record }: CaseDetailsCardProps) {
   return (
-    <aside className="rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+    <aside className="rounded-[var(--radius-card)] border border-border bg-surface p-3.5 shadow-[var(--shadow-card)] sm:p-4">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
         Case details
       </h2>
-      <dl className="mt-4 space-y-3">
+      <dl className="mt-3 space-y-2.5">
         <SidebarMetaRow label="Case ID">
           <span
             className="font-mono text-[12px] text-foreground"

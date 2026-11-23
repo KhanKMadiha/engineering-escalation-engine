@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CaseDetailsCard } from "@/components/cases/CaseDetailsCard";
-import { caseDetailTwoColumnGridClassName } from "@/components/cases/CaseDetailTwoColumnLayout";
+import {
+  assessmentTwoColumnGridClassName,
+  caseDetailTwoColumnGridClassName,
+} from "@/components/cases/CaseDetailTwoColumnLayout";
 import { CaseIssueHeader } from "@/components/cases/CaseIssueHeader";
 import { CaseTimeline } from "@/components/cases/CaseTimeline";
 import { CaseWorkspace } from "@/components/cases/CaseWorkspace";
@@ -445,7 +448,7 @@ describe("final case workspace presentation", () => {
       />,
     );
     expect(html).toContain("Investigation");
-    expect(html).toContain("Overview");
+    expect(html).toContain("Issue summary");
     expect(html).toContain("Impact &amp; timeline");
     expect(html).toContain("Affected users");
     expect(html).toContain("Not recorded");
@@ -463,7 +466,7 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain("Customer / support-provided");
     expect(html).toContain("Steps to reproduce");
     expect(html).not.toContain("Reproduction status");
-    expect(html).toContain("font-bold");
+    expect(html).toContain("font-semibold");
     expect(html).not.toContain("Root cause");
     expect(html).not.toContain("Not yet identified");
     expect(html).toContain("Workaround");
@@ -472,7 +475,11 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Troubleshooting performed");
     expect(html).toContain("Next steps");
     expect(html).toContain("Technical evidence");
-    expect(html).toContain("Add evidence");
+    expect(html).not.toContain("Add evidence");
+    expect(html).not.toContain(
+      "New evidence is saved on this case. It does not automatically update the Assessment recommendation.",
+    );
+    expect(html).not.toContain("Delete");
     expect(html).toContain("API response");
     expect(html).toContain("View");
     expect(html).not.toContain("Customer report");
@@ -481,10 +488,10 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("req-1");
     expect(html).not.toContain("Add screenshot");
     expect(html).toContain(caseDetailTwoColumnGridClassName);
-    // Individual section cards (not one mega-card wrapping every section)
-    expect(html.match(/rounded-\[var\(--radius-card\)\]/g)?.length ?? 0).toBeGreaterThan(
-      5,
-    );
+    // Evidence rail cards remain; Investigation body uses divider sections.
+    expect(
+      html.match(/rounded-\[var\(--radius-card\)\]/g)?.length ?? 0,
+    ).toBeGreaterThan(0);
     expect(html).not.toContain("Pending evidence");
     expect(html).not.toContain("Datadog");
     expect(html).not.toContain("Postman");
@@ -494,7 +501,7 @@ describe("final case workspace presentation", () => {
       "What happened, what was tested, and what was established.",
     );
     expect(html).not.toContain("Intermittent upstream failure");
-    expect(html.indexOf("Overview")).toBeLessThan(
+    expect(html.indexOf("Issue summary")).toBeLessThan(
       html.indexOf("Impact &amp; timeline"),
     );
     expect(html.indexOf("Impact &amp; timeline")).toBeLessThan(
@@ -609,7 +616,7 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Case details");
     expect(html).not.toContain("Recent activity");
     expect(html).toContain(
-      "Advisory recommendation — not an approved escalation.",
+      "Advisory recommendation. Human approval is a separate stage.",
     );
     expect(html).toContain("View assessment details");
     // Default Assessment no longer duplicates Investigation / evidence cards.
@@ -624,7 +631,7 @@ describe("final case workspace presentation", () => {
     expect(html).not.toContain(">ESCALATE<");
     expect(html).not.toContain("Technical assessment");
     expect(html).not.toContain("Approve escalation");
-    expect(html).toContain(caseDetailTwoColumnGridClassName);
+    expect(html).toContain(assessmentTwoColumnGridClassName);
     // Threshold constants remain available to the details panel implementation.
     expect(ESCALATION_THRESHOLDS.escalateMin).toBeGreaterThan(0);
     expect(ESCALATION_WEIGHTS.reportedSeverityHigh).toBeGreaterThan(0);
@@ -811,6 +818,7 @@ describe("final case workspace presentation", () => {
     expect(html).toContain("Intermittent 500 errors");
     expect(html).not.toContain("[DEMO]");
     expect(html).not.toContain("Demo case");
+    expect(html).not.toContain("Example case");
     expect(html).not.toContain("Fictional data");
     expect(html).not.toContain(formatCaseKey(record.id));
     expect(html).not.toContain(">Case ID<");

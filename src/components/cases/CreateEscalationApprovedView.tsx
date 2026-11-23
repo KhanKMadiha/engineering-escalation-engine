@@ -66,13 +66,13 @@ function ApprovedEscalationLanding({
       : String(handoff.affectedCustomerCount);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       <div className="flex flex-col items-start gap-2 border-b border-border pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
           Create escalation
         </h2>
         <span
-          className="inline-flex shrink-0 items-center rounded-md bg-success-soft px-2 py-0.5 text-sm font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200"
+          className="inline-flex shrink-0 items-center rounded-md bg-success-soft px-2 py-0.5 text-sm font-medium text-success ring-1 ring-inset ring-emerald-200"
           aria-label="Approved"
         >
           ✓ Escalation approved
@@ -80,10 +80,10 @@ function ApprovedEscalationLanding({
       </div>
 
       <div>
-        <h3 className="text-base font-semibold tracking-tight text-foreground">
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">
           Prepared escalation
         </h3>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2 sm:gap-x-12 sm:gap-y-3 lg:gap-x-16">
+        <dl className="mt-2.5 grid gap-2.5 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-2.5 lg:gap-x-14">
           <SummaryItem label="Issue">
             {stripDemoMarkersForDisplay(handoff.title)}
           </SummaryItem>
@@ -97,8 +97,8 @@ function ApprovedEscalationLanding({
             {supportReproducibilityLabel(handoff.reproducibility)}
           </SummaryItem>
         </dl>
-        <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <div className="mt-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
             Reason for escalation
           </p>
           <p className="mt-1 text-[15px] leading-snug text-foreground">{reason}</p>
@@ -117,10 +117,12 @@ function SummaryItem({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted">
         {label}
       </dt>
-      <dd className="mt-1 text-[15px] leading-snug text-foreground">{children}</dd>
+      <dd className="mt-0.5 text-[15px] leading-snug text-foreground">
+        {children}
+      </dd>
     </div>
   );
 }

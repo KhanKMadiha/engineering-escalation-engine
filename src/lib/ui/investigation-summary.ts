@@ -634,6 +634,7 @@ export function investigationProgressLabel(
     case "awaiting_decision":
       return "Awaiting approval";
     case "escalated":
+      // No destination context here — match queue-row "Approval recorded".
       return "Approval recorded";
     default:
       return null;

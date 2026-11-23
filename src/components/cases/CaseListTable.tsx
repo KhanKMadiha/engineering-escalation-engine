@@ -21,7 +21,7 @@ function RecommendationCell({ item }: { item: SupportCaseSummary }) {
   }
 
   return (
-    <span className="block break-words font-medium text-foreground">
+    <span className="block break-words text-[15px] font-normal text-foreground">
       {formatRecommendationLabel(item.escalationRecommendation)}
     </span>
   );
@@ -34,20 +34,20 @@ function UpdatedCell({ value }: { value: string }) {
   }
 
   return (
-    <time dateTime={value} className="block whitespace-nowrap text-muted">
+    <time dateTime={value} className="block whitespace-nowrap text-[15px] text-muted">
       {parts.date}
     </time>
   );
 }
 
 const headClass =
-  "px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted first:pl-5 last:pr-7 sm:px-3.5 sm:first:pl-6 sm:last:pr-8";
+  "px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted first:pl-4 last:pr-4 sm:px-3.5 sm:first:pl-5 sm:last:pr-5";
 const cellClass =
-  "px-3 py-4 align-top first:pl-5 last:pr-7 sm:px-3.5 sm:first:pl-6 sm:last:pr-8";
+  "px-3 py-3.5 align-middle first:pl-4 last:pr-4 sm:px-3.5 sm:py-4 sm:first:pl-5 sm:last:pr-5";
 
 /**
  * Case queue — Case ID | Issue | Customer | Severity | Status | Recommendation | Updated.
- * Product / environment / reported live on Case Detail, not in the queue row.
+ * Ownership context lives in the global DEMO notice, not per-row labels.
  */
 export function CaseListTable({ cases }: CaseListTableProps) {
   if (cases.length === 0) {
@@ -68,18 +68,18 @@ export function CaseListTable({ cases }: CaseListTableProps) {
 
   return (
     <>
-      <div className="hidden rounded-[var(--radius-card)] border border-border bg-surface shadow-[var(--shadow-card)] xl:block">
+      <div className="hidden xl:block">
         <table className="w-full table-fixed text-left text-[15px]">
           <colgroup>
-            <col style={{ width: "9%" }} />
+            <col style={{ width: "10%" }} />
             <col style={{ width: "32%" }} />
-            <col style={{ width: "13%" }} />
+            <col style={{ width: "14%" }} />
             <col style={{ width: "8%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "11%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "8%" }} />
           </colgroup>
-          <thead className="border-b border-border bg-subtle">
+          <thead className="border-b border-border">
             <tr>
               <th scope="col" className={headClass}>
                 Case ID
@@ -109,39 +109,34 @@ export function CaseListTable({ cases }: CaseListTableProps) {
               const customerLabel = stripDemoMarkerPrefix(item.customer);
               const issueLabel = stripDemoMarkerPrefix(item.issueTitle);
               const caseKey = formatCaseKey(item.id);
-              const ownership = demoCaseOwnershipLabel(item);
 
               return (
-                <tr key={item.id} className="hover:bg-subtle/70">
+                <tr
+                  key={item.id}
+                  className="transition-colors hover:bg-subtle focus-within:bg-subtle"
+                >
                   <td className={cellClass}>
                     <Link
                       href={`/cases/${item.id}`}
-                      className="font-mono text-xs font-medium text-muted hover:text-foreground hover:underline"
+                      className="font-mono text-[13px] font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
                       title={`Case ${caseKey}`}
                     >
                       {caseKey}
                     </Link>
-                    {ownership ? (
-                      <p className="mt-1 text-[11px] font-medium text-muted">
-                        {ownership}
-                      </p>
-                    ) : null}
                   </td>
                   <td className={cellClass}>
                     <Link
                       href={`/cases/${item.id}`}
-                      className="block break-words font-semibold text-foreground hover:underline"
+                      className="block break-words text-[15px] font-medium leading-snug text-foreground hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
                       title={issueLabel}
                     >
                       {issueLabel}
                     </Link>
                   </td>
-                  <td
-                    className={`${cellClass} break-words font-medium text-foreground`}
-                  >
+                  <td className={`${cellClass} break-words`}>
                     <Link
                       href={`/cases/${item.id}`}
-                      className="hover:underline"
+                      className="text-[15px] font-normal text-foreground hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
                     >
                       {customerLabel}
                     </Link>
@@ -174,48 +169,42 @@ export function CaseListTable({ cases }: CaseListTableProps) {
           const issueLabel = stripDemoMarkerPrefix(item.issueTitle);
           const updated = formatDateTimeParts(item.updatedAt)?.date;
           const caseKey = formatCaseKey(item.id);
-          const ownership = demoCaseOwnershipLabel(item);
 
           return (
             <li key={item.id}>
               <Link
                 href={`/cases/${item.id}`}
-                className="block rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] outline-none transition-colors hover:bg-subtle/50 focus-visible:ring-2 focus-visible:ring-accent"
+                className="block rounded-[var(--radius-card)] border border-border bg-surface p-3.5 outline-none transition-colors hover:border-[#d1d5db] hover:bg-subtle focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-medium text-muted">
+                  <span className="font-mono text-[13px] font-semibold text-accent">
                     {caseKey}
                   </span>
-                  {ownership ? (
-                    <span className="text-[11px] font-medium text-muted">
-                      {ownership}
-                    </span>
-                  ) : null}
                   <SeverityBadge severity={item.severity} />
                   <StatusBadge
                     status={item.status}
                     recommendation={item.escalationRecommendation}
                   />
                 </div>
-                <p className="mt-2 text-[15px] font-semibold text-foreground">
+                <p className="mt-2 text-[15px] font-medium leading-snug text-foreground">
                   {issueLabel}
                 </p>
-                <p className="mt-1 text-sm font-medium text-foreground">
+                <p className="mt-0.5 text-[15px] font-normal text-foreground">
                   {customerLabel}
                 </p>
-                <div className="mt-3 flex flex-wrap items-end justify-between gap-2 border-t border-border pt-3">
+                <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2 border-t border-border pt-2.5">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                       Recommendation
                     </p>
-                    <div className="mt-0.5 text-[15px]">
+                    <div className="mt-0.5">
                       <RecommendationCell item={item} />
                     </div>
                   </div>
                   {updated ? (
                     <time
                       dateTime={item.updatedAt}
-                      className="shrink-0 text-sm text-muted"
+                      className="shrink-0 text-[15px] text-muted"
                     >
                       Updated {updated}
                     </time>

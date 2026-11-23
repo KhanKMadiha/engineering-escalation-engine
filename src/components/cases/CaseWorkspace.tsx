@@ -15,16 +15,21 @@ import {
 } from "@/lib/ui/case-workflow-stages";
 import type { CaseRecord, DemoDownstreamRecord } from "@/types";
 
+/** Deep-link ids accepted via `?tab=` (presentation only). */
+export type CaseWorkspaceInitialTab = CaseTabId | "approval";
+
 type CaseWorkspaceProps = {
   record: CaseRecord;
   existingDownstreamRecords?: DemoDownstreamRecord[];
+  /** Optional deep-link from `?tab=` — presentation only. */
+  initialTab?: CaseWorkspaceInitialTab;
 };
 
 /**
  * Maps legacy tab ids (used by Overview deep-links) to workflow stages.
  * Presentation only — does not alter domain state.
  */
-function tabToStage(tab: CaseTabId): WorkflowStage {
+function tabToStage(tab: CaseWorkspaceInitialTab): WorkflowStage {
   switch (tab) {
     case "overview":
       return "Case details";
@@ -32,6 +37,8 @@ function tabToStage(tab: CaseTabId): WorkflowStage {
       return "Investigation";
     case "assessment":
       return "Assessment";
+    case "approval":
+      return "Escalation approval";
     case "handoff":
       return "Create escalation";
     default:
@@ -59,11 +66,14 @@ function resolveAvailableStage(
 export function CaseWorkspace({
   record,
   existingDownstreamRecords = [],
+  initialTab,
 }: CaseWorkspaceProps) {
   const recommendation = record.escalationResult?.recommendation ?? null;
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>(() =>
     resolveAvailableStage(
-      workflowStageForStatus(record.status, recommendation),
+      initialTab
+        ? tabToStage(initialTab)
+        : workflowStageForStatus(record.status, recommendation),
       record,
     ),
   );
@@ -91,7 +101,7 @@ export function CaseWorkspace({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-4">
       <CaseWorkflowStepper
         status={record.status}
         recommendation={recommendation}
@@ -104,7 +114,6 @@ export function CaseWorkspace({
         id={panelId}
         role="tabpanel"
         aria-label={`${selectedStage} section`}
-        className="pt-1"
       >
         {selectedStage === "Case details" ? (
           <OverviewTab record={record} goToTab={goToTab} />

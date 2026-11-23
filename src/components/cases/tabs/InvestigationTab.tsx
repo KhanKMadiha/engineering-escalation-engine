@@ -1,14 +1,12 @@
 import { CaseDetailTwoColumnLayout } from "@/components/cases/CaseDetailTwoColumnLayout";
 import { TechnicalEvidenceSidebar } from "@/components/cases/TechnicalEvidenceSidebar";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { SectionCard } from "@/components/ui/SectionCard";
 import {
   buildImpactTimeline,
   buildInvestigationNextSteps,
   buildInvestigationOverview,
   buildTroubleshootingPerformed,
   establishedWorkaround,
-  investigationProgressLabel,
   reproductionResultDisplay,
   splitReproductionSteps,
   type ImpactTimelineProvenance,
@@ -24,28 +22,9 @@ type InvestigationTabProps = {
 /** Compact field label — bold for scanability; values stay regular weight. */
 function FieldLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="text-xs font-bold uppercase tracking-wide text-muted">
+    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
       {children}
     </p>
-  );
-}
-
-function SectionCard({
-  title,
-  children,
-  className = "",
-}: {
-  title: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <Card padding="sm" className={className}>
-      <h3 className="text-sm font-bold text-foreground">{title}</h3>
-      <div className="mt-3 text-[15px] font-normal leading-relaxed text-foreground">
-        {children}
-      </div>
-    </Card>
   );
 }
 
@@ -55,10 +34,10 @@ function EmptyValue({ children }: { children: ReactNode }) {
 
 function BulletList({ items }: { items: string[] }) {
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-1.5">
       {items.map((item) => (
-        <li key={item} className="flex gap-2 font-normal">
-          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted" />
+        <li key={item} className="flex gap-2.5 font-normal">
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
           <span>{item}</span>
         </li>
       ))}
@@ -74,8 +53,9 @@ function impactProvenanceHint(
 }
 
 /**
- * Investigation workspace — individual section cards matching the approved mockup.
+ * Investigation workspace — section headings + evidence rail.
  * Presentation only — does not alter scoring, approval, or persistence.
+ * Lifecycle status lives in the case header; avoid duplicating it here.
  */
 export function InvestigationTab({ record }: InvestigationTabProps) {
   const overview = buildInvestigationOverview(record);
@@ -90,133 +70,139 @@ export function InvestigationTab({ record }: InvestigationTabProps) {
   const reproductionResult = reproductionResultDisplay(
     record.stepsToReproduce,
   );
-  const progress = investigationProgressLabel(
-    record.status,
-    record.escalationResult?.recommendation,
-  );
 
   return (
     <CaseDetailTwoColumnLayout
-      mainClassName="space-y-3"
+      mainClassName="space-y-0"
       main={
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              Investigation
-            </h2>
-            {progress ? <Badge tone="neutral">{progress}</Badge> : null}
-          </div>
+          <h2 className="mb-5 text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+            Investigation
+          </h2>
 
-          <SectionCard title="Overview">
-            {overview.affectedProduct ? (
-              <div className="mb-3">
-                <FieldLabel>Affected product</FieldLabel>
-                <p className="mt-1 text-[14px] font-normal text-foreground">
-                  {overview.affectedProduct}
-                </p>
-              </div>
-            ) : null}
-            {overview.summary ? (
-              <p className="whitespace-pre-wrap font-normal">
-                {overview.summary}
-              </p>
-            ) : (
-              <EmptyValue>No issue description provided.</EmptyValue>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Impact & timeline">
-            <dl className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3">
-              {impact.rows.map((row) => {
-                const hint = impactProvenanceHint(row.provenance);
-                return (
-                  <div
-                    key={row.label}
-                    className="grid min-w-0 grid-rows-[auto_auto_auto] content-start gap-1"
-                  >
-                    <dt className="min-h-[1rem]">
-                      <FieldLabel>{row.label}</FieldLabel>
-                    </dt>
-                    <dd
-                      className={`min-h-[1.25rem] text-[14px] font-normal leading-snug ${
-                        row.provenance === "not_recorded"
-                          ? "text-muted"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {row.value}
-                    </dd>
-                    <p className="min-h-[1rem] text-xs font-normal text-muted">
-                      {hint ?? "\u00a0"}
+          <div className="space-y-0">
+            <SectionCard title="Issue summary" className="pb-5">
+              <div className="rounded-lg border border-[#d7ebe5] bg-accent-soft/70 px-3.5 py-3 sm:px-4 sm:py-3.5">
+                {overview.affectedProduct ? (
+                  <div className="mb-2">
+                    <FieldLabel>Affected product</FieldLabel>
+                    <p className="mt-0.5 text-[14px] font-medium text-foreground">
+                      {overview.affectedProduct}
                     </p>
                   </div>
-                );
-              })}
-            </dl>
-          </SectionCard>
-
-          <SectionCard title="Expected vs actual behaviour">
-            <div className="grid gap-3 lg:grid-cols-2">
-              <div className="min-w-0 rounded-md border border-border bg-slate-50/50 p-3">
-                <FieldLabel>Expected behaviour</FieldLabel>
-                <p className="mt-2 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
-                  {record.expectedBehaviour.trim() || "Not provided."}
-                </p>
+                ) : null}
+                {overview.summary ? (
+                  <p className="whitespace-pre-wrap text-[14px] font-normal leading-relaxed sm:text-[15px]">
+                    {overview.summary}
+                  </p>
+                ) : (
+                  <EmptyValue>No issue description provided.</EmptyValue>
+                )}
               </div>
-              <div className="min-w-0 rounded-md border border-border bg-slate-50/50 p-3">
-                <FieldLabel>Actual behaviour</FieldLabel>
-                <p className="mt-2 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
-                  {record.actualBehaviour.trim() || "Not provided."}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
+            </SectionCard>
 
-          <SectionCard title="Steps to reproduce">
-            {steps.length > 0 ? (
-              <ol className="list-decimal space-y-2 pl-5 text-[14px] font-normal leading-relaxed">
-                {steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-            ) : (
-              <EmptyValue>No reproduction steps provided.</EmptyValue>
-            )}
-            {reproductionResult ? (
-              <p className="mt-3 text-[14px] font-normal leading-snug text-foreground">
-                <span className="font-bold">Reproduction result: </span>
-                {reproductionResult.label}
+            <SectionCard title="Impact & timeline" className="pt-1 pb-5">
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:grid-cols-3 sm:gap-x-5">
+                {impact.rows.map((row) => {
+                  const hint = impactProvenanceHint(row.provenance);
+                  return (
+                    <div key={row.label} className="min-w-0 content-start">
+                      <dt>
+                        <FieldLabel>{row.label}</FieldLabel>
+                      </dt>
+                      <dd
+                        className={`mt-0.5 text-[14px] font-normal leading-snug ${
+                          row.provenance === "not_recorded"
+                            ? "text-muted"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {row.value}
+                      </dd>
+                      {hint ? (
+                        <p className="mt-0.5 text-xs font-normal text-muted">
+                          {hint}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </dl>
+            </SectionCard>
+
+            <SectionCard title="Expected vs actual behaviour" className="pt-1 pb-5">
+              <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+                <div className="min-w-0">
+                  <FieldLabel>Expected behaviour</FieldLabel>
+                  <p className="mt-1.5 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
+                    {record.expectedBehaviour.trim() || "Not provided."}
+                  </p>
+                </div>
+                <div className="min-w-0 border-t border-border pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <FieldLabel>Actual behaviour</FieldLabel>
+                  <p className="mt-1.5 whitespace-pre-wrap text-[14px] font-normal leading-relaxed">
+                    {record.actualBehaviour.trim() || "Not provided."}
+                  </p>
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Steps to reproduce" className="pt-1 pb-5">
+              {steps.length > 0 ? (
+                <ol className="space-y-2.5 text-[14px] font-normal leading-relaxed">
+                  {steps.map((step, index) => (
+                    <li key={step} className="flex gap-2.5">
+                      <span
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-accent-foreground"
+                        aria-hidden
+                      >
+                        {index + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <EmptyValue>No reproduction steps provided.</EmptyValue>
+              )}
+              {reproductionResult ? (
+                <p className="mt-3 border-t border-border pt-3 text-[14px] font-normal leading-snug text-foreground">
+                  <span className="font-semibold text-foreground">
+                    Reproduction result:{" "}
+                  </span>
+                  {reproductionResult.label}
+                </p>
+              ) : null}
+            </SectionCard>
+
+            <SectionCard title="Troubleshooting performed">
+              {troubleshootingPerformed.length > 0 ? (
+                <BulletList items={troubleshootingPerformed} />
+              ) : (
+                <EmptyValue>No troubleshooting recorded.</EmptyValue>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Workaround">
+              <p
+                className={`font-normal ${
+                  workaroundLabel.recorded ? "text-foreground" : "text-muted"
+                }`}
+              >
+                {workaroundLabel.label}
               </p>
-            ) : null}
-          </SectionCard>
+            </SectionCard>
 
-          <SectionCard title="Troubleshooting performed">
-            {troubleshootingPerformed.length > 0 ? (
-              <BulletList items={troubleshootingPerformed} />
-            ) : (
-              <EmptyValue>No troubleshooting recorded.</EmptyValue>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Workaround">
-            <p
-              className={`font-normal ${
-                workaroundLabel.recorded ? "text-foreground" : "text-muted"
-              }`}
-            >
-              {workaroundLabel.label}
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Next steps">
-            {nextSteps.length > 0 ? (
-              <BulletList items={nextSteps} />
-            ) : (
-              <EmptyValue>
-                No outstanding investigation steps listed.
-              </EmptyValue>
-            )}
-          </SectionCard>
+            <SectionCard title="Next steps">
+              {nextSteps.length > 0 ? (
+                <BulletList items={nextSteps} />
+              ) : (
+                <EmptyValue>
+                  No outstanding investigation steps listed.
+                </EmptyValue>
+              )}
+            </SectionCard>
+          </div>
         </>
       }
       sidebar={

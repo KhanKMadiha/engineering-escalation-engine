@@ -1,84 +1,146 @@
-import { Card } from "@/components/ui/Card";
+import { Disclosure } from "@/components/ui/Disclosure";
+import {
+  ESCALATION_THRESHOLDS,
+  ESCALATION_WEIGHTS,
+} from "@/lib/escalation/escalation-rules";
 
-const SECTIONS = [
+const STAGES = [
   {
-    title: "Case intake and ticket import",
-    body: "Support engineers create cases manually or import from Freshdesk when configured. Customer-provided fields — issue description, expected and actual behaviour, troubleshooting and evidence — are captured without inventing technical details.",
+    title: "Case details",
+    body: "Capture the customer issue, impact and context as reported. The product does not invent technical evidence.",
   },
   {
-    title: "Investigation and evidence sources",
-    body: "The Investigation section presents intake and investigation fields as customer or support-provided. Technical evidence (logs, correlation references, timestamps) is shown when present on the case. AI-derived fields such as reproducibility are labelled separately so reviewers can distinguish inference from verified input. Missing-evidence lists come from analysis results and do not invent new artefacts.",
+    title: "Investigation",
+    body: "Document reproduction steps, expected versus actual behaviour, and evidence already collected on the case.",
   },
   {
-    title: "AI-assisted evidence analysis",
-    body: "Structured AI analysis assesses severity, reproducibility, missing evidence and suspected product defect signals. Evidence identified by the model is validated against case fields before use. AI output is labelled and advisory. The system does not fabricate logs, request IDs or root causes.",
+    title: "Assessment",
+    body: "AI analysis is advisory. A fixed scoring model produces a readiness score and recommendation from case signals.",
   },
   {
-    title: "Deterministic escalation scoring",
-    body: "An escalation engine applies fixed rules and weights to produce a score and recommendation (escalate, continue investigation, or insufficient evidence). Thresholds and scoring logic are deterministic and auditable.",
+    title: "Escalation approval",
+    body: "A reviewer must approve escalation or continue investigation. AI recommendations never escalate a case on their own.",
   },
   {
-    title: "Human review and approval",
-    body: "When a case awaits decision, an authorised reviewer must approve escalation or continue investigation. AI recommendations never escalate a case automatically. The human reviewer retains final decision authority.",
+    title: "Create escalation",
+    body: "After approval, generate a structured Engineering handoff. Jira and Rootly records in this demo are simulated.",
+  },
+] as const;
+
+const PRINCIPLES = [
+  {
+    title: "Evidence first",
+    body: "Use customer-provided or verified technical evidence. AI inference is labelled separately.",
   },
   {
-    title: "Engineering handoff generation",
-    body: "After human approval, the system generates a structured Engineering handoff from existing case, analysis and decision data. Downstream demo actions (for example Jira or Rootly) do not bypass approval gates.",
+    title: "Human judgement",
+    body: "Combine AI analysis with human review. Escalation to Engineering requires explicit approval.",
   },
   {
-    title: "Audit history",
-    body: "Case events record intake, analysis, scoring, human decisions and handoff creation. Timeline and Activity views surface these persisted events only — they do not invent history.",
+    title: "Clear handoffs",
+    body: "Produce consistent, actionable handoffs so Engineering receives what Support already knows.",
   },
 ] as const;
 
 /**
- * Explanatory resource page — presentation only; describes confirmed behaviour.
+ * Explanatory resource page. Describes confirmed product behaviour only.
  */
 export default function HowItWorksPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-10">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           How it works
         </h1>
-        <p className="text-[15px] text-muted">
-          The Engineering Escalation Engine helps Support Operations investigate
-          customer issues, decide whether Engineering escalation is warranted,
-          and produce structured handoffs — with humans in control of the final
-          decision.
+        <p className="max-w-3xl text-[15px] text-muted">
+          From investigation to an evidence-based Engineering handoff.
         </p>
       </div>
 
-      <Card padding="lg" className="border-border bg-subtle/40">
-        <h2 className="text-base font-semibold text-foreground">
-          AI is advisory
-        </h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-muted">
-          AI analysis and escalation recommendations inform the reviewer. They
-          do not replace human judgement. Escalation to Engineering requires
-          explicit human approval. Evidence shown in the product is either
-          customer-provided, support-verified technical evidence, or clearly
-          labelled as AI inference.
-        </p>
-      </Card>
-
-      <ol className="space-y-4">
-        {SECTIONS.map((section, index) => (
-          <li key={section.title}>
-            <Card padding="lg">
-              <p className="font-mono text-xs font-semibold text-muted">
-                {String(index + 1).padStart(2, "0")}
-              </p>
-              <h2 className="mt-1 text-base font-semibold text-foreground">
-                {section.title}
-              </h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted">
-                {section.body}
-              </p>
-            </Card>
+      <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
+        {STAGES.map((stage, index) => (
+          <li key={stage.title} className="min-w-0">
+            <p className="font-mono text-xs font-semibold text-accent">
+              {String(index + 1).padStart(2, "0")}
+            </p>
+            <h2 className="mt-1.5 text-[15px] font-semibold text-foreground">
+              {stage.title}
+            </h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              {stage.body}
+            </p>
           </li>
         ))}
       </ol>
+
+      <section className="border-t border-border pt-8" aria-labelledby="principles-heading">
+        <h2
+          id="principles-heading"
+          className="text-lg font-semibold tracking-tight text-foreground"
+        >
+          Our principles
+        </h2>
+        <ul className="mt-5 grid gap-6 sm:grid-cols-3">
+          {PRINCIPLES.map((principle) => (
+            <li key={principle.title}>
+              <h3 className="text-[15px] font-semibold text-foreground">
+                {principle.title}
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                {principle.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Disclosure summary="How the readiness score works" className="bg-subtle">
+        <div className="space-y-3 text-sm leading-relaxed text-muted">
+          <p>
+            The readiness score is calculated by fixed rules. AI can contribute
+            labelled signals, but it cannot change the weights or thresholds.
+          </p>
+          <p>
+            Score ranges from 0 to 100. Recommendations use these cut-offs:
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              {ESCALATION_THRESHOLDS.escalateMin}–100: Escalate
+            </li>
+            <li>
+              {ESCALATION_THRESHOLDS.continueMin}–
+              {ESCALATION_THRESHOLDS.escalateMin - 1}: Continue investigation
+            </li>
+            <li>
+              0–{ESCALATION_THRESHOLDS.continueMin - 1}: Insufficient evidence
+            </li>
+          </ul>
+          <p>Examples of scoring factors include:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              Production environment (+{ESCALATION_WEIGHTS.productionEnvironment})
+            </li>
+            <li>
+              Reported high severity (+{ESCALATION_WEIGHTS.reportedSeverityHigh})
+            </li>
+            <li>
+              Suspected product defect (+{ESCALATION_WEIGHTS.suspectedProductDefect})
+            </li>
+            <li>
+              Confirmed reproducibility (+
+              {ESCALATION_WEIGHTS.confirmedReproducibility})
+            </li>
+            <li>
+              Missing logs and request IDs (
+              {ESCALATION_WEIGHTS.missingLogsAndRequestIds})
+            </li>
+          </ul>
+          <p>
+            A human reviewer still decides whether to escalate. Simulated Jira
+            and Rootly actions only run after approval.
+          </p>
+        </div>
+      </Disclosure>
     </div>
   );
 }

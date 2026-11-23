@@ -77,6 +77,7 @@ export function formatLifecycleStatusLabel(
   }
 
   if (display === "escalated") {
+    // Queue rows omit destinations (undefined) — they cannot know Jira/Rootly.
     if (input.downstreamDestinations == null) {
       return "Approval recorded";
     }

@@ -8,14 +8,16 @@ vi.mock("next/navigation", () => ({
 import { AppShell } from "@/components/layout/AppShell";
 
 describe("AppShell", () => {
-  it("renders light sidebar with workspace, operations and resources nav", () => {
+  it("renders charcoal sidebar with workspace, operations and resources nav", () => {
     const html = renderToStaticMarkup(
       <AppShell pendingReviewsCount={1} handoffsCount={1}>
         <div>page-content</div>
       </AppShell>,
     );
-    expect(html).toContain("Escalation Engine");
+    expect(html).toContain("Engineering Escalation Engine");
     expect(html).toContain("Support Operations");
+    expect(html).toContain("viewBox=\"0 0 32 32\"");
+    expect(html).not.toContain(">E</span>");
     expect(html).toContain("Workspace");
     expect(html).toContain("Case queue");
     expect(html).toContain("New case");
@@ -42,6 +44,9 @@ describe("AppShell", () => {
     expect(html).toContain("Menu");
     expect(html).toContain("bg-sidebar");
     expect(html).toContain("bg-sidebar-active");
+    expect(html).toContain("bg-surface");
+    expect(html).toContain("border-border");
+    expect(html).toContain("Breadcrumb");
     expect(html).toContain("1 items");
   });
 });

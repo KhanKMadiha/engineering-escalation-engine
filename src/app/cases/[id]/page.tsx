@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { CaseIssueHeader } from "@/components/cases/CaseIssueHeader";
-import { CaseWorkspace } from "@/components/cases/CaseWorkspace";
+import {
+  CaseWorkspace,
+  type CaseWorkspaceInitialTab,
+} from "@/components/cases/CaseWorkspace";
 import { getCaseService } from "@/lib/cases/get-case-service";
 import {
   assertCaseReadableByWorkspace,
@@ -13,10 +16,35 @@ import { getCaseRepository } from "@/lib/repositories/get-case-repository";
 
 type CaseDetailPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
-export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
+const INITIAL_TAB_IDS = [
+  "overview",
+  "investigation",
+  "assessment",
+  "approval",
+  "handoff",
+] as const satisfies readonly CaseWorkspaceInitialTab[];
+
+function parseInitialTab(
+  raw: string | undefined,
+): CaseWorkspaceInitialTab | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  return (INITIAL_TAB_IDS as readonly string[]).includes(raw)
+    ? (raw as CaseWorkspaceInitialTab)
+    : undefined;
+}
+
+export default async function CaseDetailPage({
+  params,
+  searchParams,
+}: CaseDetailPageProps) {
   const { id } = await params;
+  const { tab } = await searchParams;
+  const initialTab = parseInitialTab(tab);
   const record = await getCaseService().getCaseOrNull(id);
 
   if (!record) {
@@ -48,16 +76,15 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   );
 
   return (
-    <div className="space-y-1">
-      <div className="pb-4">
-        <CaseIssueHeader
-          record={record}
-          downstreamDestinations={downstreamDestinations}
-        />
-      </div>
+    <div className="space-y-3 sm:space-y-4">
+      <CaseIssueHeader
+        record={record}
+        downstreamDestinations={downstreamDestinations}
+      />
       <CaseWorkspace
         record={{ ...record, technicalEvidence }}
         existingDownstreamRecords={existingDownstreamRecords}
+        initialTab={initialTab}
       />
     </div>
   );

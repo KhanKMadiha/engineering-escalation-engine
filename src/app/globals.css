@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 /**
- * Support Operations visual system — light enterprise SaaS.
+ * Support Operations visual system — charcoal sidebar, pure-white workspace, teal accent.
  * Presentation only; does not affect domain behaviour.
  *
- * Predominantly white. Strong colour reserved for severity, warnings,
- * approvals, and errors. Warm taupe (#B2A397) used sparingly.
+ * Strong colour reserved for primary actions, severity, warnings, and errors.
  */
 :root {
-  --background: #f8f9fa;
-  --foreground: #20242a;
+  --background: #ffffff;
+  --foreground: #17191c;
   --surface: #ffffff;
   --border: #e5e7eb;
-  --muted: #667085;
-  --subtle: #f3f4f6;
+  --muted: #6b7280;
+  --subtle: #f9fafb;
 
-  --sidebar: #f9fafb;
-  --sidebar-foreground: #20242a;
-  --sidebar-muted: #667085;
-  --sidebar-active: #e9edf2;
-  --sidebar-active-foreground: #20242a;
-  --sidebar-accent: #344256;
-  --sidebar-border: #e5e7eb;
+  --sidebar: #1c1f24;
+  --sidebar-foreground: #f3f4f6;
+  --sidebar-muted: #9ca3af;
+  --sidebar-active: #243530;
+  --sidebar-active-foreground: #e8f5f1;
+  --sidebar-accent: #0f6b5c;
+  --sidebar-border: #2a2f36;
+  --sidebar-hover: #262b32;
 
-  --accent: #344256;
+  --accent: #0f6b5c;
   --accent-foreground: #ffffff;
-  --accent-hover: #2a3444;
-  --accent-soft: #f3f4f6;
+  --accent-hover: #0c574a;
+  --accent-soft: #ecf8f5;
 
-  --warm: #b2a397;
+  /* Retained token name for compatibility; muted slate, not warm beige. */
+  --warm: #9ca3af;
 
   --danger: #b42318;
   --danger-soft: #fef3f2;
@@ -38,10 +39,9 @@
   --success-soft: #ecfdf3;
 
   --radius-card: 0.5rem;
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04),
-    0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-card: 0 1px 2px rgba(23, 25, 28, 0.04);
   --content-pad-x: 1.25rem;
-  --content-pad-y: 1.5rem;
+  --content-pad-y: 1.25rem;
 }
 
 @theme inline {
@@ -58,6 +58,7 @@
   --color-sidebar-active-foreground: var(--sidebar-active-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-hover: var(--sidebar-hover);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-hover: var(--accent-hover);
@@ -84,14 +85,14 @@ body {
 @media (min-width: 640px) {
   :root {
     --content-pad-x: 1.75rem;
-    --content-pad-y: 1.75rem;
+    --content-pad-y: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   :root {
     --content-pad-x: 2.25rem;
-    --content-pad-y: 2rem;
+    --content-pad-y: 1.75rem;
   }
 }
 

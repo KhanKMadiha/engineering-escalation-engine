@@ -25,11 +25,11 @@ export function HandoffSummarySidebar({ record }: HandoffSummarySidebarProps) {
     : null;
 
   return (
-    <Card padding="lg" className="min-w-0">
+    <Card padding="sm" className="min-w-0">
       <h2 className="text-sm font-semibold tracking-tight text-foreground">
         Decision
       </h2>
-      <dl className="mt-3 space-y-2.5">
+      <dl className="mt-2.5 space-y-2.5">
         <SidebarMetaRow label="Outcome">Approved</SidebarMetaRow>
         {reviewer ? (
           <SidebarMetaRow label="Reviewer">{reviewer}</SidebarMetaRow>

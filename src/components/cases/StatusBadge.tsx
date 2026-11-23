@@ -10,15 +10,25 @@ import type {
   Severity,
 } from "@/types";
 
-/** Cool grey neutrals; escalated uses soft danger for attention. */
+/** Quiet neutrals; escalated / analyzing use semantic colour for attention. */
 const STATUS_STYLES: Record<CaseStatus, string> = {
   draft: "bg-subtle text-muted ring-border",
   submitted: "bg-subtle text-foreground ring-border",
   analyzing: "bg-warning-soft text-warning ring-amber-200",
-  awaiting_decision: "bg-subtle text-foreground ring-border",
+  awaiting_decision: "bg-accent-soft text-accent ring-[#b8ddd4]",
   escalated: "bg-danger-soft text-danger ring-red-200",
   investigation_continues: "bg-subtle text-foreground ring-border",
   closed: "bg-subtle text-muted ring-border",
+};
+
+const STATUS_DOT: Record<CaseStatus, string> = {
+  draft: "bg-muted",
+  submitted: "bg-muted",
+  analyzing: "bg-warning",
+  awaiting_decision: "bg-accent",
+  escalated: "bg-danger",
+  investigation_continues: "bg-muted",
+  closed: "bg-muted",
 };
 
 const SEVERITY_STYLES: Record<Severity, string> = {
@@ -58,9 +68,13 @@ export function StatusBadge({
 
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[styleKey]}`}
+      className={`inline-flex h-6 max-w-full items-center gap-1.5 truncate rounded-md px-2 text-[12px] font-medium capitalize leading-none ring-1 ring-inset ${STATUS_STYLES[styleKey]}`}
     >
-      {label}
+      <span
+        aria-hidden
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[styleKey]}`}
+      />
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -72,7 +86,7 @@ type SeverityBadgeProps = {
 export function SeverityBadge({ severity }: SeverityBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${SEVERITY_STYLES[severity]}`}
+      className={`inline-flex h-6 items-center rounded-md px-2 text-[12px] font-medium capitalize leading-none ring-1 ring-inset ${SEVERITY_STYLES[severity]}`}
     >
       {severity}
     </span>
@@ -86,7 +100,7 @@ type EnvironmentBadgeProps = {
 export function EnvironmentBadge({ environment }: EnvironmentBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${ENVIRONMENT_STYLES[environment]}`}
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${ENVIRONMENT_STYLES[environment]}`}
     >
       {environment}
     </span>
